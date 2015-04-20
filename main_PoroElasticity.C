@@ -45,7 +45,7 @@ int runSimulator(char* infile)
     exporter = SIM::handleDataOutput(model, solver, model.opt.hdf5,
                                      false, model.getDumpInterval(), 1);
 
-  if (!solver.solveProblem(infile, exporter))
+  if (solver.solveProblem(infile, exporter))
     return 5;
 
   delete exporter;
