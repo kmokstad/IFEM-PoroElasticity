@@ -19,8 +19,8 @@ Number of D-dofs      288
 Number of P-dofs      121
 Number of unknowns    352
   step = 1  time = 8475.82
-L2-norm            : 0.00614718
-Max Y-displacement+pressure : 0.0203886
+L2-norm            : 0.0248471
+Max Y-displacement+pressure : 0.10011
   step = 2  time = 16951.6
-L2-norm            : 0.00614718
-Max Y-displacement+pressure : 0.0203886
+L2-norm            : 0.0406314
+Max Y-displacement+pressure : 0.149947

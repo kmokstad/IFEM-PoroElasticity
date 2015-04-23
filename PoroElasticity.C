@@ -282,7 +282,7 @@ bool PoroElasticity::evalIntMx (LocalIntegral& elmInt,
 
   double scl(sc);
   if (scl == 0.0)
-    scl = E*rhof*gacc/(permeability[0]*time.dt);
+    scl = sqrt(E*rhof*gacc/(permeability[0]*time.dt));
 
   // Biot's coefficient
   double alpha = 1.0 - (Ko/Ks);
@@ -312,7 +312,7 @@ bool PoroElasticity::evalIntMx (LocalIntegral& elmInt,
   Cpp.resize(fe.N2.size(),fe.N2.size());
   for (i = 1; i <= fe.N2.size(); i++)
     for (j = 1; j <= fe.N2.size(); j++)
-      Cpp(i,j) += sc*sc*fe.N2(i)*Minv*fe.N2(j)*fe.detJxW;
+      Cpp(i,j) += scl*scl*fe.N2(i)*Minv*fe.N2(j)*fe.detJxW;
 
   // Integration of the permeability matrix
   Matrix Kpp;
@@ -320,7 +320,7 @@ bool PoroElasticity::evalIntMx (LocalIntegral& elmInt,
   for (i = 1; i <= fe.N2.size(); i++)
     for (j = 1; j <= fe.N2.size(); j++)
       for (k = 1; k <= nsd; k++)
-        Kpp(i,j) += sc*sc*fe.dN2dX(i,k)*(permeability[k-1]/(rhof*gacc))*fe.dN2dX(j,k)*fe.detJxW;
+        Kpp(i,j) += scl*scl*fe.dN2dX(i,k)*(permeability[k-1]/(rhof*gacc))*fe.dN2dX(j,k)*fe.detJxW;
 
   elMat.A[pp] += Cpp;
   elMat.A[pp].add(Kpp,time.dt);
