@@ -1,8 +1,7 @@
 <?xml version="1.0" encoding="UTF-8" standalone="yes"?>
 <simulation>
   <!-- General - geometry definitions !-->
-  <geometry>
-    <patchfile type="bsplines">OGSBenchmark1D.g2</patchfile>
+  <geometry X0="0.0 0.0 0.0" Lx="0.1" Ly="1.0">
     <raiseorder patch="1" u="1" v="1"/>
     <refine type="uniform" patch="1" u="0" v="20"/>
     <topologysets>
