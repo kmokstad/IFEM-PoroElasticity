@@ -428,9 +428,14 @@ size_t PoroElasticity::getNoFields (int fld) const
 
 const char* PoroElasticity::getField1Name (size_t i, const char* prefix) const
 {
-  if (i >= nsd) i = 3;
+  if (i == 11)
+    i = 4;
+  else if (i == 12)
+    i = 3;
+  else if (i >= nsd)
+    i = 3;
 
-  static const char* s[4] = { "u_x", "u_y", "u_z", "p^w" };
+  static const char* s[5] = { "u_x", "u_y", "u_z", "p^w", "u" };
   if(!prefix) return s[i];
 
   static std::string name;
