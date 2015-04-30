@@ -18,6 +18,7 @@
 #include "Vec3.h"
 #include "ElmMats.h"
 #include "IntegrandBase.h"
+#include "PoroMaterial.h"
 
 
 /*!
@@ -62,33 +63,6 @@ public:
   //! \param[in] n Outward-directed unit normal vector at current point
   virtual Vec3 getTraction(const Vec3& X, const Vec3& n) const;
 
-  //! \berief Defines the porosity of the porous medium
-  //! \param[in] poro Porosity of the porous medium
-  virtual void setPorosity(double Porosity) { poro = Porosity; }
-
-  //! \berief Defines the densities of the constituents of the porous medium
-  //! \param[in] rhof Density of fluid
-  //! \param[in] rhos Density of solid grains
-  virtual void setDensities(double FDensity, double SDensity)
-  { rhof = FDensity; rhos = SDensity;  }
-
-  //! \brief Defines the bulk moduli of the constituents and the porous medium
-  //! \param[in] Kw Bulk modulus of water
-  //! \param[in] Ks Bulk modulus of solid grains
-  //! \param[in] Ko Bulk modulus of porous medium
-  virtual void setBulkModuli(double Kwater, double Ksolid, double Koverall)
-  { Kw = Kwater; Ks = Ksolid; Ko = Koverall; }
-
-  //! \brief Defines the constitutive parameters
-  //! \param[in] E Young's mudulus of porous medium
-  //! \param[in] nu Poisson's ratio of porous medium
-  virtual void setConstitutiveProperties(double YModulus, double PRatio)
-  { E = YModulus; nu = PRatio; }
-
-  //! \brief Defines the permeability of the porous medium
-  //! \param[in] perm The permeability matrix diagonal
-  virtual void setPermeability(VecFunc* permeability) { perm = permeability; }
-
   //! \brief Defines the gravitation vector
   //! \param[in] grav Gravity vector
   virtual void setGravity(const Vec3& gravity) { grav = gravity; }
@@ -96,6 +70,9 @@ public:
   //! \brief Defines the scaling factor
   //! \param[in] sc Scaling factor
   virtual void setScaling(double scaling) { sc = scaling; }
+
+  //! \brief Defines the material properties.
+  virtual void setMaterial(PoroMaterial* material) { mat = material; }
 
   //! Evaluates the mass density at current point
   virtual double getMassDensity(const Vec3&) const;
@@ -136,7 +113,7 @@ public:
   //! \param[out] Cmat Constitutive matrix at current point
   //! \param[in] E Young's modulus
   //! \param[in] nu Poisson's ratio
-  bool formElasticMatrix(Matrix& Cmat) const;
+  bool formElasticMatrix(Matrix& Cmat, const Vec3& X) const;
 
   //! \brief Evaluates the integrand at an interior point
   //! \param elmInt The local integral object to receive the contributions
@@ -190,15 +167,6 @@ public:
   virtual const char* getField2Name(size_t i, const char* prefix = 0) const;
 
 private:
-  double poro;            //!< Porosity of the porous medium
-  double rhof;            //!< Density of fluid
-  double rhos;            //!< Density of solids
-  double Kw;              //!< Bulk modulus of water
-  double Ks;              //!< Bulk modulus of solids
-  double Ko;              //!< Bulk modulus of porous medium
-  double E;               //!< Young's modulus
-  double nu;              //!< Poisson's ratio
-  VecFunc* perm;          //!< Diagonal of permeability matrix
   Vec3 grav;              //!< Gravitation vector
   double sc;              //!< Scaling factor
 
@@ -209,6 +177,7 @@ protected:
   TractionFunc* tracFld;                        //!< Pointer to implicit boundary traction field
   VecFunc* fluxFld;                             //!< Pointer to explicit boundary traction field
   TimeIntegration::BDF bdf;                     //!< BDF time discretization parameters
+  PoroMaterial* mat;                            //!< Material data
 };
 
 #endif

@@ -32,6 +32,8 @@
 #include "TimeStep.h"
 #include "InitialConditionHandler.h"
 #include "SIMSolver.h"
+#include "Profiler.h"
+#include "PoroMaterial.h"
 
 
 /*!
@@ -66,89 +68,25 @@ public:
     const TiXmlElement* child = elem->FirstChildElement();
     for (; child; child = child->NextSiblingElement())
     {
-      if (!strcasecmp(child->Value(),"porosity"))
-        this->parsePorosity(child);
-      else if (!strcasecmp(child->Value(),"densities"))
-        this->parseDensities(child);
-      else if (!strcasecmp(child->Value(),"bulkmoduli"))
-        this->parseBulkModuli(child);
-      else if (!strcasecmp(child->Value(),"constitutive"))
-        this->parseConstitutive(child);
-      else if (!strcasecmp(child->Value(),"permeability"))
-        this->parsePermeability(child);
-      else if (!strcasecmp(child->Value(),"gravity"))
+      if (!strcasecmp(child->Value(),"gravity"))
         this->parseGravity(child);
       else if (!strcasecmp(child->Value(),"scaling"))
         this->parseScaling(child);
+      else if (!strcasecmp(child->Value(),"isotropic")) {
+        int code = this->parseMaterialSet(child,mVec.size());
+        std::cout <<"\tMaterial code "<< code <<":" << std::endl;
+        mVec.push_back(new PoroMaterial);
+        mVec.back()->parse(child);
+        mVec.back()->printLog();
+      }
       else
         this->Dim::parse(child);
     }
 
+    if (!mVec.empty())
+      poroel.setMaterial(mVec.front());
+
     return true;
-  }
-
-  //! \brief Parse porosities from an XML element.
-  void parsePorosity(const TiXmlElement* elem)
-  {
-    double poro = 0.0;
-    utl::getAttribute(elem,"poro",poro);
-    poroel.setPorosity(poro);
-    IFEM::cout <<"\nPorosity, n = " << poro << std::endl;
-  }
-
-  //! \brief Parse densities from an XML element.
-  void parseDensities(const TiXmlElement* elem)
-  {
-    double rhof = 1.0, rhos = 1.0;
-    utl::getAttribute(elem,"rhof",rhof);
-    utl::getAttribute(elem,"rhos",rhos);
-    poroel.setDensities(rhof,rhos);
-    IFEM::cout << "Densities: "
-               << "\n\tDensity of Fluid, rhof = " << rhof
-               << "\n\tDensity of Solid, rhos = " << rhos << std::endl;
-  }
-
-  //! \brief Parse bulk moduli from an XML element.
-  void parseBulkModuli(const TiXmlElement* elem)
-  {
-    double Kw = 1.0, Ks = 1.0, Ko = 1.0;
-    utl::getAttribute(elem,"Kw",Kw);
-    utl::getAttribute(elem,"Ks",Ks);
-    utl::getAttribute(elem,"Ko",Ko);
-    poroel.setBulkModuli(Kw,Ks,Ko);
-    IFEM::cout << "Bulk Moduli: "
-               << "\n\tBulk Modulus of Water, Kw = " << Kw
-               << "\n\tBulk Modulus of Solid, Ks = " << Ks
-               << "\n\tBulk Modulus of Medium, Ko = " << Ko << std::endl;
-  }
-
-  //! \brief Parse constitutive properties from an XML element.
-  void parseConstitutive(const TiXmlElement* elem)
-  {
-    double E = 1.0, nu = 1.0;
-    utl::getAttribute(elem,"E",E);
-    utl::getAttribute(elem,"nu",nu);
-    poroel.setConstitutiveProperties(E,nu);
-    IFEM::cout << "Constitutive Properties: "
-               << "\n\tYoung's Modulus, E = " << E
-               << "\n\tPoisson's Ratio, nu = " << nu << std::endl;
-  }
-
-  //! \brief Parse permeability properties from an XML element.
-  void parsePermeability(const TiXmlElement* elem)
-  {
-    std::string value(utl::getValue(elem, "permeability"));
-
-    std::string type;
-    utl::getAttribute(elem, "type", type);
-    if (type.empty())
-      type = "constant";
-
-    VecFunc* perm = utl::parseVecFunc(value, type);
-    if (perm) {
-      poroel.setPermeability(perm);
-      IFEM::cout << "Permeability:\n\tk = " << value << std::endl;
-    }
   }
 
   //! \brief Parse gravity from an XML element.
@@ -287,9 +225,21 @@ public:
     SIM::setInitialConditions(*this);
   }
 
+  //! \brief Initializes material properties for integration of interior terms.
+  //! \param[in] propInd Physical property index
+  virtual bool initMaterial(size_t propInd)
+  {
+    if (propInd >= mVec.size())
+      propInd = mVec.size()-1;
+
+    poroel.setMaterial(mVec[propInd]);
+    return true;
+  }
+
 private:
-  PoroElasticity poroel; //!< Poroelasticity integrand
-  Vectors solution;      //!< Solution vectors
+  PoroElasticity poroel;            //!< Poroelasticity integrand
+  Vectors solution;                 //!< Solution vectors
+  std::vector<PoroMaterial*> mVec;  //!< Material data
 };
 
 

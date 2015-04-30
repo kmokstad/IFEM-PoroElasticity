@@ -16,9 +16,11 @@ set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} ${IFEM_CXX_FLAGS}")
 configure_file(${PROJECT_SOURCE_DIR}/../Common/scripts/regtest.sh.in
                regtest.sh)
 
-file(GLOB PoroElasticity_SRCS *.C)
-
 include_directories(${IFEM_INCLUDES} ../Common)
+
+set(PoroElasticity_SRCS main_PoroElasticity.C
+                        PoroElasticity.C
+                        PoroMaterial.C)
 
 set(EXECUTABLE_OUTPUT_PATH ${CMAKE_BINARY_DIR}/bin)
 
