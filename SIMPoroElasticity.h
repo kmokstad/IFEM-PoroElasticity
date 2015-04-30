@@ -34,6 +34,7 @@
 #include "SIMSolver.h"
 #include "Profiler.h"
 #include "PoroMaterial.h"
+#include <memory>
 
 
 /*!
@@ -75,7 +76,7 @@ public:
       else if (!strcasecmp(child->Value(),"isotropic")) {
         int code = this->parseMaterialSet(child,mVec.size());
         std::cout <<"\tMaterial code "<< code <<":" << std::endl;
-        mVec.push_back(new PoroMaterial);
+        mVec.push_back(std::unique_ptr<PoroMaterial>(new PoroMaterial));
         mVec.back()->parse(child);
         mVec.back()->printLog();
       }
@@ -84,7 +85,7 @@ public:
     }
 
     if (!mVec.empty())
-      poroel.setMaterial(mVec.front());
+      poroel.setMaterial(mVec.front().get());
 
     return true;
   }
@@ -232,14 +233,14 @@ public:
     if (propInd >= mVec.size())
       propInd = mVec.size()-1;
 
-    poroel.setMaterial(mVec[propInd]);
+    poroel.setMaterial(mVec[propInd].get());
     return true;
   }
 
 private:
   PoroElasticity poroel;            //!< Poroelasticity integrand
   Vectors solution;                 //!< Solution vectors
-  std::vector<PoroMaterial*> mVec;  //!< Material data
+  std::vector<std::unique_ptr<PoroMaterial>> mVec;  //!< Material data
 };
 
 
