@@ -28,6 +28,27 @@ class TiXmlElement;
 class PoroMaterial
 {
 public:
+  /*! \brief Helper template for wrapping a constant/function pair */
+    template<class Function>
+  struct FuncConstPair
+  {
+    Function* function;                 //!< Function definition
+    typename Function::Output constant; //!< Constant
+
+    //! \brief Constructor.
+    FuncConstPair() { function = nullptr; constant = 0.0; }
+
+    //! \brief Parse an XML element. Specialized per type
+    Function* parse(const char* val, const std::string& type) { return nullptr; }
+
+    //! \brief Evaluate function.
+    //! \param[in] X the value to evaluate at.
+    typename Function::Output evaluate(const typename Function::Input& X) const
+    {
+      return function ? (*function)(X) : constant;
+    }
+  };
+
   //! \brief Empty constructor.
   PoroMaterial() {}
 
@@ -65,27 +86,6 @@ public:
   //! \brief Returns Poisson's ratio at the current point.
   double getPoisson(const Vec3& X) const;
 protected:
-  /*! \brief Helper template for wrapping a constant/function pair */
-    template<class Function>
-  struct FuncConstPair
-  {
-    Function* function;                 //!< Function definition
-    typename Function::Output constant; //!< Constant
-
-    //! \brief Constructor.
-    FuncConstPair() { function = nullptr; constant = 0.0; }
-
-    //! \brief Parse an XML element. Specialized per type
-    Function* parse(const char* val, const std::string& type) { return nullptr; }
-
-    //! \brief Evaluate function.
-    //! \param[in] X the value to evaluate at.
-    typename Function::Output evaluate(const typename Function::Input& X) const
-    {
-      return function ? (*function)(X) : constant;
-    }
-  };
-
   FuncConstPair<RealFunc> Emod; //!< Young's modulus
   FuncConstPair<RealFunc> nu;   //!< Poisson's ratio
   FuncConstPair<RealFunc> rhof; //!< Fluid density
