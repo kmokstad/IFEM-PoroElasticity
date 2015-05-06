@@ -80,6 +80,7 @@ public:
   //! \brief Evaluates the body force field (if any) at a specified point
   virtual Vec3 getBodyForce(const Vec3& X) const;
 
+  using IntegrandBase::getLocalIntegral;
   //! \brief Returns a local integral container for the given element
   //! \param[in] nen1 Number of nodes on element for basis 1
   //! \param[in] nen2 Number of nodes on element for basis 2
