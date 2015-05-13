@@ -67,9 +67,15 @@ public:
   //! \param[in] grav Gravity vector
   virtual void setGravity(const Vec3& gravity) { grav = gravity; }
 
+  //! \brief Obtain current gravity vector
+  const Vec3 getGravity() const { return grav; }
+
   //! \brief Defines the scaling factor
   //! \param[in] sc Scaling factor
   virtual void setScaling(double scaling) { sc = scaling; }
+
+  //! \brief Obtain current scaling factor
+  double getScaling() const { return sc; }
 
   //! \brief Defines the material properties.
   virtual void setMaterial(PoroMaterial* material) { mat = material; }

@@ -16,16 +16,17 @@ set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} ${IFEM_CXX_FLAGS}")
 configure_file(${PROJECT_SOURCE_DIR}/../Common/scripts/regtest.sh.in
                regtest.sh)
 
-include_directories(${IFEM_INCLUDES} ../Common)
+include_directories(${IFEM_INCLUDES} ../Common ${PROJECT_SOURCE_DIR})
 
-set(PoroElasticity_SRCS main_PoroElasticity.C
-                        PoroElasticity.C
+set(PoroElasticity_SRCS PoroElasticity.C
                         PoroMaterial.C)
+
+add_library(CommonPoro ${PoroElasticity_SRCS})
 
 set(EXECUTABLE_OUTPUT_PATH ${CMAKE_BINARY_DIR}/bin)
 
-add_executable(PoroElasticity ${PoroElasticity_SRCS})
-target_link_libraries(PoroElasticity ${IFEM_LIBRARIES})
+add_executable(PoroElasticity main_PoroElasticity.C)
+target_link_libraries(PoroElasticity CommonPoro ${IFEM_LIBRARIES})
 
 # Installation
 install(TARGETS PoroElasticity DESTINATION bin COMPONENT bin)
@@ -43,6 +44,13 @@ else()
   endforeach()
 endif()
 list(APPEND TEST_APPS PoroElasticity)
+
+# Unit tests
+IFEM_add_test_app(${PROJECT_SOURCE_DIR}/Test/*.C
+                  ${PROJECT_SOURCE_DIR}/Test
+                  PoroElasticity
+                  CommonPoro ${IFEM_LIBRARIES})
+
 if(IFEM_COMMON_APP_BUILD)
   set(TEST_APPS ${TEST_APPS} PARENT_SCOPE)
   set(UNIT_TEST_NUMBER ${UNIT_TEST_NUMBER} PARENT_SCOPE)
