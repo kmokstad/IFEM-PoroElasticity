@@ -154,11 +154,11 @@ Vec3 PoroElasticity::getBodyForce(const Vec3& X) const
 }
 
 
-LocalIntegral* PoroElasticity::getLocalIntegral (size_t nen1, size_t nen2,
+LocalIntegral* PoroElasticity::getLocalIntegral (const std::vector<size_t>& nen,
                                                  size_t, bool neumann) const
 {
-  const size_t nedof1 = nsd*nen1;
-  const size_t nedof = nedof1 + nen2;
+  const size_t nedof1 = nsd*nen[0];
+  const size_t nedof = nedof1 + nen[1];
 
   ElmMats* result = new MixedElmMats();
 
@@ -167,13 +167,13 @@ LocalIntegral* PoroElasticity::getLocalIntegral (size_t nen1, size_t nen2,
   result->b[Fres].resize(nedof);
   result->b[Fprev].resize(nedof);
   result->b[Fu].resize(nedof1);
-  result->b[Fp].resize(nen2);
+  result->b[Fp].resize(nen[1]);
 
   if (!neumann)
   {
     result->A[uu].resize(nedof1,nedof1);
-    result->A[up].resize(nedof1,nen2);
-    result->A[pp].resize(nen2,nen2);
+    result->A[up].resize(nedof1,nen[1]);
+    result->A[pp].resize(nen[1],nen[1]);
     result->A[Ktan].resize(nedof,nedof);
     result->A[Kprev].resize(nedof,nedof);
   }
@@ -182,16 +182,18 @@ LocalIntegral* PoroElasticity::getLocalIntegral (size_t nen1, size_t nen2,
 }
 
 
-bool PoroElasticity::initElement (const std::vector<int>& MNPC1,
-                                  const std::vector<int>& MNPC2, size_t n1,
+bool PoroElasticity::initElement (const std::vector<int>& MNPC,
+                                  const std::vector<size_t>& elem_sizes,
+                                  const std::vector<size_t>& basis_sizes,
                                   LocalIntegral& elmInt)
 {
   if (primsol.front().empty()) return true;
 
   // Extract the element level solution vectors
   elmInt.vec.resize(NSOL);
-  int ierr = utl::gather(MNPC1,nsd,primsol.front(),elmInt.vec[U])
-           + utl::gather(MNPC2,0,1,primsol.front(),elmInt.vec[P],nsd*n1,n1);
+  std::vector<int>::const_iterator fstart = MNPC.begin() + elem_sizes[0];
+  int ierr = utl::gather(IntVec(MNPC.begin(),fstart),nsd,primsol.front(),elmInt.vec[U])
+           + utl::gather(IntVec(fstart,MNPC.end()),0,1,primsol.front(),elmInt.vec[P],nsd*basis_sizes[0],basis_sizes[0]);
 
   if (ierr == 0) return true;
 
@@ -202,11 +204,12 @@ bool PoroElasticity::initElement (const std::vector<int>& MNPC1,
 }
 
 
-bool PoroElasticity::initElementBou (const std::vector<int>& MNPC1,
-                                     const std::vector<int>&,
-                                     size_t, LocalIntegral& elmInt)
+bool PoroElasticity::initElementBou (const std::vector<int>& MNPC,
+                                     const std::vector<size_t>& elem_sizes,
+                                     const std::vector<size_t>& basis_sizes,
+                                     LocalIntegral& elmInt)
 {
-  return this->IntegrandBase::initElementBou(MNPC1,elmInt);
+  return this->initElement(MNPC,elem_sizes,basis_sizes,elmInt);
 }
 
 
@@ -283,7 +286,7 @@ bool PoroElasticity::evalIntMx (LocalIntegral& elmInt,
   size_t i,j,k;
   Matrix Bmat, Cmat, CB;
 
-  if (!this->formBmatrix(Bmat,fe.dN1dX))
+  if (!this->formBmatrix(Bmat,fe.grad(1)))
     return false;
 
   if (!this->formElasticMatrix(Cmat,X))
@@ -315,28 +318,28 @@ bool PoroElasticity::evalIntMx (LocalIntegral& elmInt,
   // Integration of the coupling matrix
   Matrix Kuptmp;
   const size_t nstrc = nsd*(nsd+1)/2;
-  Kuptmp.resize(fe.N2.size(),nstrc);
+  Kuptmp.resize(fe.basis(2).size(),nstrc);
 
-  for (i = 1; i <= fe.N2.size(); i++)
+  for (i = 1; i <= fe.basis(2).size(); i++)
     for (j = 1; j <= nstrc; j++)
-      Kuptmp(i,j) += scl*m[j-1]*alpha*fe.N2(i)*fe.detJxW;
+      Kuptmp(i,j) += scl*m[j-1]*alpha*fe.basis(2)(i)*fe.detJxW;
 
   elMat.A[up].multiply(Bmat,Kuptmp,true,true,true);
 
   // Integration of the compressibilty matrix
   Matrix Cpp;
-  Cpp.resize(fe.N2.size(),fe.N2.size());
-  for (i = 1; i <= fe.N2.size(); i++)
-    for (j = 1; j <= fe.N2.size(); j++)
-      Cpp(i,j) += scl*scl*fe.N2(i)*Minv*fe.N2(j)*fe.detJxW;
+  Cpp.resize(fe.basis(2).size(),fe.basis(2).size());
+  for (i = 1; i <= fe.basis(2).size(); i++)
+    for (j = 1; j <= fe.basis(2).size(); j++)
+      Cpp(i,j) += scl*scl*fe.basis(2)(i)*Minv*fe.basis(2)(j)*fe.detJxW;
 
   // Integration of the permeability matrix
   Matrix Kpp;
-  Kpp.resize(fe.N2.size(),fe.N2.size());
-  for (i = 1; i <= fe.N2.size(); i++)
-    for (j = 1; j <= fe.N2.size(); j++)
+  Kpp.resize(fe.basis(2).size(),fe.basis(2).size());
+  for (i = 1; i <= fe.basis(2).size(); i++)
+    for (j = 1; j <= fe.basis(2).size(); j++)
       for (k = 1; k <= nsd; k++)
-        Kpp(i,j) += scl*scl*fe.dN2dX(i,k)*(permeability[k-1]/(mat->getFluidDensity(X)*gacc))*fe.dN2dX(j,k)*fe.detJxW;
+        Kpp(i,j) += scl*scl*fe.grad(2)(i,k)*(permeability[k-1]/(mat->getFluidDensity(X)*gacc))*fe.grad(2)(j,k)*fe.detJxW;
 
   elMat.A[pp] += Cpp;
   elMat.A[pp].add(Kpp,time.dt);
@@ -386,17 +389,17 @@ bool PoroElasticity::evalBouMx (LocalIntegral& elmInt,
 
   // Integrate the force vector fu
   ElmMats& elMat = static_cast<ElmMats&>(elmInt);
-  for (size_t i = 1; i <= fe.N1.size(); i++)
+  for (size_t i = 1; i <= fe.basis(1).size(); i++)
     for (unsigned short int j = 1; j <= nsd; j++)
-      elMat.b[Fu](nsd*(i-1)+j) += (-1.0)*(dtr[j-1]*fe.N1(i)*fe.detJxW +
-                                  bf[j-1]*fe.N1(i)*fe.detJxW);
+      elMat.b[Fu](nsd*(i-1)+j) += (-1.0)*(dtr[j-1]*fe.basis(1)(i)*fe.detJxW +
+                                  bf[j-1]*fe.basis(1)(i)*fe.detJxW);
 
   // First term of fp vector in RHS, remember to add water flux term
-  for (size_t i = 1; i <= fe.N2.size(); i++)
+  for (size_t i = 1; i <= fe.basis(2).size(); i++)
   {
     double fpvec = 0.0;
     for (size_t k = 1; k <= nsd; k++)
-      fpvec += scl*fe.dN2dX(i,k)*(permeability[k-1]/gacc)*grav[k-1];
+      fpvec += scl*fe.grad(2)(i,k)*(permeability[k-1]/gacc)*grav[k-1];
     elMat.b[Fp](i) = fpvec*time.dt*fe.detJxW;
   }
 
@@ -479,18 +482,16 @@ const char* PoroElasticity::getField2Name (size_t i, const char* prefix) const
 
 
 bool PoroElasticity::evalSol(Vector& s, const MxFiniteElement& fe,
-                             const Vec3& X, const std::vector<int>& MNPC1,
-                             const std::vector<int>& MNPC2) const
+                             const Vec3& X, const std::vector<int>& MNPC,
+                             const std::vector<size_t>& elem_sizes) const
 {
   Vector eV;
-  utl::gather(MNPC1,nsd,s,eV);
+  std::vector<int>::const_iterator fstart = MNPC.begin() + elem_sizes[0];
+  utl::gather(IntVec(MNPC.begin(),fstart),nsd,s,eV);
 
   Vec3 V;
   for (size_t s=0;s<nsd;++s)
-    V[s] = eV.dot(fe.N1,s,nsd);
-
-  Vector eP;
-  utl::gather(MNPC2,1,s,eP);
+    V[s] = eV.dot(fe.basis(1),s,nsd);
 
   return true;
 }

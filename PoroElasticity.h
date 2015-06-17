@@ -91,7 +91,7 @@ public:
   //! \param[in] nen1 Number of nodes on element for basis 1
   //! \param[in] nen2 Number of nodes on element for basis 2
   //! \param[in] neumann Whether or not we are assembling Neumann BCs
-  virtual LocalIntegral* getLocalIntegral(size_t nen1, size_t nen2,
+  virtual LocalIntegral* getLocalIntegral(const std::vector<size_t>& nen,
                                           size_t, bool neumann) const;
 
   //! \brief Initializes current element for numerical integration
@@ -99,17 +99,19 @@ public:
   //! \param[in] MNPC2 Nodal point correspondence for basis 2
   //! \param[in] n1 Number of nodes in basis 1 on this patch
   //! \param elmInt The local integral object for current element
-  virtual bool initElement(const std::vector<int>& MNPC1,
-                           const std::vector<int>& MNPC2,
-                           size_t n1, LocalIntegral& elmInt);
+  virtual bool initElement(const std::vector<int>& MNPC,
+                           const std::vector<size_t>& elem_sizes,
+                           const std::vector<size_t>& basis_sizes,
+                           LocalIntegral& elmInt);
 
   //! \brief Initializes current element for numerical boundary integration (mixed)
   //! \param[in] MNPC1 Nodal point correspondence for basis 1
   //! \param[in] MNPC2 Nodal point correspondence for basis 2
   //! \param elmInt The local integral object for current element
-  virtual bool initElementBou(const std::vector<int>& MNPC1,
-                              const std::vector<int>& MNPC2,
-                              size_t, LocalIntegral& elmInt);
+  virtual bool initElementBou(const std::vector<int>& MNPC,
+                              const std::vector<size_t>& elem_sizes,
+                              const std::vector<size_t>& basis_sizes,
+                              LocalIntegral& elmInt);
 
   //! \brief Calculates the strain-displacement matrix.
   //! \param[in] Bmat The strain-displacement matrix
@@ -144,11 +146,11 @@ public:
   //! \param[out] s The solution field values at current point
   //! \param[in] fe Mixed finite element data at current point
   //! \param[in] X Cartesian coordinates of current point
-  //! \param[in] MNPC1 Nodal point correspondance for the basis 1
-  //! \param[in] MNPC2 Nodal point correspondance for the basis 2
+  //! \param[in] MNPC Nodal point correspondance for the bases
+  //! \param[in] elem_sizes Size of each basis on the element
   virtual bool evalSol(Vector& s, const MxFiniteElement& fe, const Vec3& X,
-                       const std::vector<int>& MNPC1,
-                       const std::vector<int>& MNPC2) const;
+                       const std::vector<int>& MNPC,
+                       const std::vector<size_t>& elem_sizes) const;
 
   //! \brief Finalizes the element quantities after the numerical integration
   //! \details This method is invoked once for each element, after the numerical
