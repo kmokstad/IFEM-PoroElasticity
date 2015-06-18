@@ -75,7 +75,7 @@ int main(int argc, char ** argv)
     else if (!strcmp(argv[i],"-1D"))
       ndim = 1;
     else if (!strcmp(argv[i],"-mixed"))
-      ASMmxBase::useCpminus1 = true;
+      ASMmxBase::Type = ASMmxBase::FULL_CONT_RAISE_BASIS1;
     else if (!infile)
       infile = argv[i];
     else
