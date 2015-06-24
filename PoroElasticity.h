@@ -180,7 +180,6 @@ private:
   double sc;              //!< Scaling factor
 
 protected:
-  unsigned short int nsd;                       //!< Number of space dimensions (2)
   unsigned short int eS;                        //!< Index to element load vector
   double gacc;                                  //!< Gravitational acceleration
   TractionFunc* tracFld;                        //!< Pointer to implicit boundary traction field

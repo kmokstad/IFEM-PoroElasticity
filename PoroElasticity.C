@@ -114,8 +114,9 @@ const Vector& PoroElasticity::MixedElmMats::getRHSVector () const
 
 
 PoroElasticity::PoroElasticity (unsigned short int n, int order) :
-  nsd(n), gacc(9.81), mat(nullptr)
+  gacc(9.81), mat(nullptr)
 {
+  nsd = n;
   primsol.resize(1+order); // Current and previous timestep solutions required
   tracFld = nullptr;
   fluxFld = nullptr;
