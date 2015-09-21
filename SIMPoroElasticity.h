@@ -48,7 +48,7 @@ public:
   typedef bool SetupProps;
 
   //! \brief The constructor initializes the references to the integrand.
-  SIMPoroElasticity() : Dim(Dim::dimension,1), poroel(Dim::dimension)
+  SIMPoroElasticity() : Dim({Dim::dimension,1}), poroel(Dim::dimension)
   {
     Dim::myProblem = &poroel;
   }
