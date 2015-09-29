@@ -37,11 +37,12 @@ enable_testing()
 if(IFEM_USE_PARALLEL_PETSC)
   # Add parallel tests here
 else()
-  file(GLOB POROEL_TESTFILES RELATIVE ${PROJECT_SOURCE_DIR}/Test
-                                      ${PROJECT_SOURCE_DIR}/Test/*.reg)
-  foreach(TESTFILE ${POROEL_TESTFILES})
-    ifem_add_test(${TESTFILE} PoroElasticity)
-  endforeach()
+  ifem_add_test(Plaxis1DVerif.reg PoroElasticity)
+  ifem_add_test(OGSBenchmark1D.reg PoroElasticity)
+  if(LRSpline_FOUND)
+    ifem_add_test(Plaxis1DVerif-LR.reg PoroElasticity)
+    ifem_add_test(OGSBenchmark1D-LR.reg PoroElasticity)
+  endif()
 endif()
 list(APPEND TEST_APPS PoroElasticity)
 
