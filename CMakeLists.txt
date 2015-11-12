@@ -21,7 +21,7 @@ include_directories(${IFEM_INCLUDES} ../Common ${PROJECT_SOURCE_DIR})
 set(PoroElasticity_SRCS PoroElasticity.C
                         PoroMaterial.C)
 
-add_library(CommonPoro ${PoroElasticity_SRCS})
+add_library(CommonPoro STATIC ${PoroElasticity_SRCS})
 
 set(EXECUTABLE_OUTPUT_PATH ${CMAKE_BINARY_DIR}/bin)
 
