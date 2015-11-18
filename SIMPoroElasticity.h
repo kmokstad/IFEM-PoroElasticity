@@ -56,7 +56,7 @@ public:
   //! \brief Destructor.
   virtual ~SIMPoroElasticity()
   {
-    Dim::myProblem = NULL;
+    Dim::myProblem = nullptr;
     Dim::myInts.clear();
   }
 
