@@ -447,7 +447,7 @@ size_t PoroElasticity::getNoFields (int fld) const
 }
 
 
-const char* PoroElasticity::getField1Name (size_t i, const char* prefix) const
+std::string PoroElasticity::getField1Name (size_t i, const char* prefix) const
 {
   if (i == 11)
     i = 4;
@@ -459,25 +459,19 @@ const char* PoroElasticity::getField1Name (size_t i, const char* prefix) const
   static const char* s[5] = { "u_x", "u_y", "u_z", "p^w", "u" };
   if(!prefix) return s[i];
 
-  static std::string name;
-  name = prefix + std::string(" ") + s[i];
-
-  return name.c_str();
+  return prefix + std::string(" ") + s[i];
 }
 
 
-const char* PoroElasticity::getField2Name (size_t i, const char* prefix) const
+std::string PoroElasticity::getField2Name (size_t i, const char* prefix) const
 {
-  if (i >= nsd) return 0;
+  if (i >= nsd) return "";
 
   static const char* s2[] = {"eps_x","eps_y","eps_xy","sig_x",
                              "sig_y","sig_z","sig_xy"}; // borked in 3D
   if (!prefix) return s2[i];
 
-  static std::string name;
-  name = prefix + std::string(" ") + s2[i];
-
-  return name.c_str();
+  return prefix + std::string(" ") + s2[i];
 }
 
 

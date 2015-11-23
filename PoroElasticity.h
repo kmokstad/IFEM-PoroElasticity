@@ -168,12 +168,12 @@ public:
   //! \brief Returns the name of a primary solution field component
   //! \param[in] i Field component index
   //! \param[in] prefix Name prefix for all components
-  virtual const char* getField1Name(size_t i, const char* prefix = 0) const;
+  virtual std::string getField1Name(size_t i, const char* prefix = 0) const;
 
   //! \brief Returns the name of a secondary solution field component
   //! \param[in] i Field component index
   //! \param[in] prefix Name prefix for all components
-  virtual const char* getField2Name(size_t i, const char* prefix = 0) const;
+  virtual std::string getField2Name(size_t i, const char* prefix = 0) const;
 
 private:
   Vec3 grav;              //!< Gravitation vector
