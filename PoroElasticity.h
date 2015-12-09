@@ -142,6 +142,7 @@ public:
                          const TimeDomain& time, const Vec3& X,
                          const Vec3& normal) const;
 
+  using IntegrandBase::evalSol;
   //! \brief Evaluates the secondary solution at a result point (mixed problem).
   //! \param[out] s The solution field values at current point
   //! \param[in] fe Mixed finite element data at current point
