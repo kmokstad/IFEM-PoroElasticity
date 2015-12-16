@@ -28,7 +28,7 @@
 class PoroElasticity : public IntegrandBase
 {
   /*!
-   * \brief Class representing an element matrix for the PoroElasticity problem
+   * \brief Class representing an element matrix for the mixed PoroElasticity problem
    */
   class MixedElmMats : public ElmMats
   {
@@ -41,6 +41,28 @@ class PoroElasticity : public IntegrandBase
     virtual const Matrix& getNewtonMatrix() const;
     //! \brief Returns the element level RHS vector
     virtual const Vector& getRHSVector() const;
+    //! \brief Makes the actual Newton matrix.
+    //! \note Separated for reuse in finalizeElement.
+    void makeNewtonMatrix(Matrix& N, bool dopp) const;
+  };
+
+  /*!
+   * \brief Class representing an element matrix for the non-mixed PoroElasticity problem
+   */
+  class NonMixedElmMats : public ElmMats
+  {
+  public:
+    //! \brief Default constructor
+    NonMixedElmMats();
+    //! \brief Empty destructor
+    virtual ~NonMixedElmMats() {}
+    //! \brief Returns the element level Newton matrix
+    virtual const Matrix& getNewtonMatrix() const;
+    //! \brief Returns the element level RHS vector
+    virtual const Vector& getRHSVector() const;
+    //! \brief Makes the actual Newton matrix.
+    //! \note Separated for reuse in finalizeElement.
+    void makeNewtonMatrix(Matrix& N, bool dopp) const;
   };
 
 public:
@@ -93,6 +115,12 @@ public:
   //! \param[in] neumann Whether or not we are assembling Neumann BCs
   virtual LocalIntegral* getLocalIntegral(const std::vector<size_t>& nen,
                                           size_t, bool neumann) const;
+  //! \brief Returns a local integral contribution object for the given element.
+  //! \param[in] nen Number of nodes on element
+  //! \param[in] iEl Global element number (1-based)
+  //! \param[in] neumann Whether or not we are assembling Neumann BCs
+  virtual LocalIntegral* getLocalIntegral(size_t nen, size_t iEl,
+                                          bool neumann = false) const;
 
   //! \brief Initializes current element for numerical integration
   //! \param[in] MNPC1 Nodal point correspondence for basis 1
@@ -104,6 +132,16 @@ public:
                            const std::vector<size_t>& basis_sizes,
                            LocalIntegral& elmInt);
 
+  //! \brief Initializes current element for numerical integration.
+  //! \param[in] MNPC Matrix of nodal point correspondance for current element
+  //! \param elmInt Local integral for element
+  //!
+  //! \details This method is invoked once before starting the numerical
+  //! integration loop over the Gaussian quadrature points over an element.
+  //! It is supposed to perform all the necessary internal initializations
+  //! needed before the numerical integration is started for current element.
+  virtual bool initElement(const std::vector<int>& MNPC, LocalIntegral& elmInt);
+
   //! \brief Initializes current element for numerical boundary integration (mixed)
   //! \param[in] MNPC1 Nodal point correspondence for basis 1
   //! \param[in] MNPC2 Nodal point correspondence for basis 2
@@ -111,6 +149,12 @@ public:
   virtual bool initElementBou(const std::vector<int>& MNPC,
                               const std::vector<size_t>& elem_sizes,
                               const std::vector<size_t>& basis_sizes,
+                              LocalIntegral& elmInt);
+
+  //! \brief Initializes current element for boundary integration.
+  //! \param[in] MNPC Matrix of nodal point correspondance for current element
+  //! \param elmInt Local integral for element
+  virtual bool initElementBou(const std::vector<int>& MNPC,
                               LocalIntegral& elmInt);
 
   //! \brief Calculates the strain-displacement matrix.
@@ -132,6 +176,14 @@ public:
   virtual bool evalIntMx(LocalIntegral& elmInt, const MxFiniteElement& fe,
                          const TimeDomain& time, const Vec3& X) const;
 
+  //! \brief Evaluates the integrand at an interior point
+  //! \param elmInt The local integral object to receive the contributions
+  //! \param[in] fe Finite element data of current integration point
+  //! \param[in] time Parameters for nonlinear and time-dependent simulations
+  //! \param[in] X Cartesian coordinates of current integration point
+  virtual bool evalInt(LocalIntegral& elmInt, const FiniteElement& fe,
+                       const TimeDomain& time, const Vec3& X) const;
+
   //! \brief Evaluates the integrand at a boundary point
   //! \param elmInt The local interal object to receive the contributions
   //! \param[in] fe Finite element data of current integration point
@@ -142,7 +194,24 @@ public:
                          const TimeDomain& time, const Vec3& X,
                          const Vec3& normal) const;
 
+  //! \brief Evaluates the integrand at a boundary point
+  //! \param elmInt The local interal object to receive the contributions
+  //! \param[in] fe Finite element data of current integration point
+  //! \param[in] time Parameters for nonlinear and time-dependent simulations
+  //! \param[in] X Cartesian coordinates of current integration point
+  //! \param[in] normal Boundary normal vector at current integration point
+  virtual bool evalBou(LocalIntegral& elmInt, const FiniteElement& fe,
+                       const TimeDomain& time, const Vec3& X,
+                       const Vec3& normal) const;
+
   using IntegrandBase::evalSol;
+  //! \brief Evaluates the secondary solution at a result point.
+  //! \param[out] s The solution field values at current point
+  //! \param[in] fe Finite element data at current point
+  //! \param[in] X Cartesian coordinates of current point
+  //! \param[in] MNPC Nodal point correspondance for the basis function values
+  virtual bool evalSol(Vector& s, const FiniteElement& fe, const Vec3& X,
+		       const std::vector<int>& MNPC) const;
   //! \brief Evaluates the secondary solution at a result point (mixed problem).
   //! \param[out] s The solution field values at current point
   //! \param[in] fe Mixed finite element data at current point

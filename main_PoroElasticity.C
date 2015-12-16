@@ -27,9 +27,14 @@
 
 
   template<class Dim>
-int runSimulator(char* infile)
+int runSimulator(char* infile, bool mixed)
 {
-  SIMPoroElasticity<Dim> model;
+  std::vector<unsigned char> fields;
+  if (mixed)
+    fields = {Dim::dimension, 1};
+  else
+    fields = {Dim::dimension+1};
+  SIMPoroElasticity<Dim> model(fields);
   SIMSolver< SIMPoroElasticity<Dim> > solver(model);
 
   int res = ConfigureSIM(model,infile,true);
@@ -63,6 +68,7 @@ int main(int argc, char ** argv)
   int i;
   char ndim = 3;
   char* infile = 0;
+  bool mixed = false;
 
   IFEM::Init(argc,argv);
 
@@ -74,9 +80,10 @@ int main(int argc, char ** argv)
       ndim = 2;
     else if (!strcmp(argv[i],"-1D"))
       ndim = 1;
-    else if (!strcmp(argv[i],"-mixed"))
+    else if (!strcmp(argv[i],"-mixed")) {
       ASMmxBase::Type = ASMmxBase::FULL_CONT_RAISE_BASIS1;
-    else if (!infile)
+      mixed = true;
+    } else if (!infile)
       infile = argv[i];
     else
       std::cerr << "*** Unknown option ignored: " << argv[i] << std::endl;
@@ -103,11 +110,11 @@ int main(int argc, char ** argv)
   IFEM::cout << std::endl;
 
   if (ndim == 3)
-    return runSimulator<SIM3D>(infile);
+    return runSimulator<SIM3D>(infile, mixed);
   else if (ndim == 2)
-    return runSimulator<SIM2D>(infile);
+    return runSimulator<SIM2D>(infile, mixed);
   else
-    return runSimulator<SIM1D>(infile);
+    return runSimulator<SIM1D>(infile, mixed);
 
   return 1;
 }

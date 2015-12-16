@@ -62,10 +62,8 @@ PoroElasticity::MixedElmMats::MixedElmMats ()
 }
 
 
-const Matrix& PoroElasticity::MixedElmMats::getNewtonMatrix () const
+void PoroElasticity::MixedElmMats::makeNewtonMatrix(Matrix& N, bool dopp) const
 {
-  Matrix& N = const_cast<Matrix&>(A[Ktan]);
-
   size_t i,j;
   size_t n = A[uu].rows();
   size_t m = A[pp].rows();
@@ -82,13 +80,23 @@ const Matrix& PoroElasticity::MixedElmMats::getNewtonMatrix () const
     }
   }
 
-  for (i = 1; i <= m; i++)
-    for (j = 1; j <= m; j++)
-    {
-      size_t ki = n+i;
-      size_t kj = n+j;
-      N(ki,kj) = A[pp](i,j);
-    }
+  if (dopp) {
+    for (i = 1; i <= m; i++)
+      for (j = 1; j <= m; j++)
+      {
+        size_t ki = n+i;
+        size_t kj = n+j;
+        N(ki,kj) = A[pp](i,j);
+      }
+  }
+}
+
+
+const Matrix& PoroElasticity::MixedElmMats::getNewtonMatrix () const
+{
+  Matrix& N = const_cast<Matrix&>(A[Ktan]);
+
+  makeNewtonMatrix(N, true);
 
   return A[Ktan];
 }
@@ -106,6 +114,64 @@ const Vector& PoroElasticity::MixedElmMats::getRHSVector () const
 
   for (i = 1; i <= m; i++)
     F(n+i) = b[Fp](i);
+
+  F += b[Fprev];
+
+  return b[Fres];
+}
+
+
+PoroElasticity::NonMixedElmMats::NonMixedElmMats ()
+{
+  this->resize(NMAT,NVEC); // Number of element matrices and vectors
+}
+
+void PoroElasticity::NonMixedElmMats::makeNewtonMatrix(Matrix& N, bool dopp) const
+{
+  size_t n = A[pp].rows();
+
+  size_t nsd = A[uu].rows()/A[pp].rows();
+  size_t nf = nsd + 1;
+  if (dopp) {
+    for (size_t i = 1; i <= n; ++i)
+      for (size_t j = 1; j <= n; ++j)
+        N(nf*i, nf*j) = A[pp](i,j);
+  }
+
+  for (size_t i = 1; i <= n; ++i) {
+    for (size_t l = 1; l <= nsd; ++l) {
+      for (size_t j = 1; j <= n; ++j) {
+        for (size_t k = 1; k <= nsd; ++k)
+          N(nf*(i-1)+l, (j-1)*nf+k) = A[uu](nsd*(i-1)+l, (j-1)*nsd+k);
+        N(nf*(i-1)+l, j*nf) = N(j*nf, nf*(i-1)+l) = A[up](nsd*(i-1)+l, j);
+      }
+    }
+  }
+}
+
+
+const Matrix& PoroElasticity::NonMixedElmMats::getNewtonMatrix () const
+{
+  Matrix& N = const_cast<Matrix&>(A[Ktan]);
+
+  makeNewtonMatrix(N, true);
+
+  return A[Ktan];
+}
+
+
+const Vector& PoroElasticity::NonMixedElmMats::getRHSVector () const
+{
+  Vector& F = const_cast<Vector&>(b[Fres]);
+  size_t n = b[Fp].size();
+
+  size_t nsd = b[Fu].size()/b[Fp].size();
+  size_t nf = nsd + 1;
+  for (size_t i = 1; i <= n; i++) {
+    for (size_t k = 1; k <= nsd; ++k)
+      F((i-1)*nf+k) = b[Fu]((i-1)*nsd+k);
+    F(i*nf) = b[Fp](i);
+  }
 
   F += b[Fprev];
 
@@ -183,6 +249,34 @@ LocalIntegral* PoroElasticity::getLocalIntegral (const std::vector<size_t>& nen,
 }
 
 
+LocalIntegral* PoroElasticity::getLocalIntegral (size_t nen,
+                                                 size_t, bool neumann) const
+{
+  const size_t nedof1 = nsd*nen;
+  const size_t nedof = nedof1 + nen;
+
+  ElmMats* result = new NonMixedElmMats();
+
+  result->rhsOnly = neumann;
+  result->withLHS = !neumann;
+  result->b[Fres].resize(nedof);
+  result->b[Fprev].resize(nedof);
+  result->b[Fu].resize(nedof1);
+  result->b[Fp].resize(nen);
+
+  if (!neumann)
+  {
+    result->A[uu].resize(nedof1,nedof1);
+    result->A[up].resize(nedof1,nen);
+    result->A[pp].resize(nen,nen);
+    result->A[Ktan].resize(nedof,nedof);
+    result->A[Kprev].resize(nedof,nedof);
+  }
+
+  return result;
+}
+
+
 bool PoroElasticity::initElement (const std::vector<int>& MNPC,
                                   const std::vector<size_t>& elem_sizes,
                                   const std::vector<size_t>& basis_sizes,
@@ -211,6 +305,39 @@ bool PoroElasticity::initElementBou (const std::vector<int>& MNPC,
                                      LocalIntegral& elmInt)
 {
   return this->initElement(MNPC,elem_sizes,basis_sizes,elmInt);
+}
+
+
+bool PoroElasticity::initElement (const std::vector<int>& MNPC,
+                                  LocalIntegral& elmInt)
+{
+  if (primsol.empty() || primsol.front().empty())
+    return true;
+
+  // Extract the element level solution vectors
+  elmInt.vec.resize(NSOL);
+  int ierr = 0;
+  Matrix temp(nsd+1, MNPC.size());
+  ierr += utl::gather(MNPC, nsd+1, primsol.front(), temp);
+  Matrix temp2(nsd, MNPC.size());
+  for (size_t k = 1; k <= nsd; ++k)
+    temp2.fillRow(k, temp.getRow(k).ptr());
+  elmInt.vec[U] = temp2;
+  elmInt.vec[P] = temp.getRow(nsd+1);
+
+  if (ierr == 0) return true;
+
+  std::cerr << " *** PoroElasticity::initElement: Detected " << ierr/3
+            << " node numbers out of range." << std::endl;
+
+  return false;
+}
+
+
+bool PoroElasticity::initElementBou (const std::vector<int>& MNPC,
+                                     LocalIntegral& elmInt)
+{
+  return this->initElement(MNPC,elmInt);
 }
 
 
@@ -276,6 +403,13 @@ bool PoroElasticity::formElasticMatrix(Matrix& Cmat, const Vec3& X) const
 bool PoroElasticity::evalIntMx (LocalIntegral& elmInt,
                                 const MxFiniteElement& fe,
                                 const TimeDomain& time, const Vec3& X) const
+{
+  return evalInt(elmInt, fe, time, X);
+}
+
+bool PoroElasticity::evalInt (LocalIntegral& elmInt,
+                              const FiniteElement& fe,
+                              const TimeDomain& time, const Vec3& X) const
 {
   ElmMats& elMat = static_cast<ElmMats&>(elmInt);
 
@@ -358,7 +492,17 @@ bool PoroElasticity::evalIntMx (LocalIntegral& elmInt,
 
 bool PoroElasticity::evalBouMx (LocalIntegral& elmInt,
                                 const MxFiniteElement& fe,
-                                const TimeDomain& time, const Vec3& X, const Vec3& normal) const
+                                const TimeDomain& time, const Vec3& X,
+                                const Vec3& normal) const
+{
+  return evalBou(elmInt, fe, time, X, normal);
+}
+
+
+bool PoroElasticity::evalBou (LocalIntegral& elmInt,
+                              const FiniteElement& fe,
+                              const TimeDomain& time, const Vec3& X,
+                              const Vec3& normal) const
 {
   if (!tracFld && !fluxFld)
   {
@@ -412,26 +556,24 @@ bool PoroElasticity::finalizeElement (LocalIntegral& elmInt, const TimeDomain&, 
 {
   ElmMats& elMat = static_cast<ElmMats&>(elmInt);
 
-  size_t i,j;
+  Vector prevSol;
 
-  size_t rAuu = elMat.A[uu].rows();
-  size_t rApp = elMat.A[pp].rows();
-
-  for (i = 1; i <= rAuu; i++)
-  {
-    for (j = 1; j <= rAuu; j++)
-      elMat.A[Kprev](i,j) = elMat.A[uu](i,j);
-    for (j = 1; j <= rApp; j++)
-    {
-      elMat.A[Kprev](i,rAuu+j) = elMat.A[up](i,j);
-      elMat.A[Kprev](rAuu+j,i) = elMat.A[up](i,j);
+  MixedElmMats* mMat = dynamic_cast<MixedElmMats*>(&elmInt);
+  if (mMat) {
+    mMat->makeNewtonMatrix(elMat.A[Kprev], false);
+    prevSol = elmInt.vec[U];
+    prevSol.insert(prevSol.end(),elmInt.vec[P].begin(),elmInt.vec[P].end());
+  } else {
+    NonMixedElmMats* mMat = dynamic_cast<NonMixedElmMats*>(&elmInt);
+    mMat->makeNewtonMatrix(elMat.A[Kprev], false);
+    size_t nf = nsd + 1;
+    prevSol.resize(nf*elMat.vec[P].size());
+    for (size_t i = 1; i <= elMat.vec[P].size(); i++) {
+      for (size_t k = 1; k <= nsd; ++k)
+        prevSol((i-1)*nf+k) = elmInt.vec[U]((i-1)*nsd+k);
+      prevSol(i*nf) = elmInt.vec[P](i);
     }
   }
-
-  Vector prevSol;
-  prevSol = elmInt.vec[U];
-
-  prevSol.insert(prevSol.end(),elmInt.vec[P].begin(),elmInt.vec[P].end());
 
   elMat.b[Fprev] = elMat.A[Kprev]*prevSol;
 
@@ -487,6 +629,21 @@ bool PoroElasticity::evalSol(Vector& s, const MxFiniteElement& fe,
   Vec3 V;
   for (size_t s=0;s<nsd;++s)
     V[s] = eV.dot(fe.basis(1),s,nsd);
+
+  return true;
+}
+
+
+bool PoroElasticity::evalSol(Vector& s, const FiniteElement& fe,
+                             const Vec3& X,
+                             const std::vector<int>& MNPC) const
+{
+  Vector eV;
+  utl::gather(MNPC,nsd+1,s,eV);
+
+  Vec3 V;
+  for (size_t s=0;s<nsd;++s)
+    V[s] = eV.dot(fe.basis(1),s,nsd+1);
 
   return true;
 }

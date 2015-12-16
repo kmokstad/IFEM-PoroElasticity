@@ -16,7 +16,7 @@
 
 TEST(TestSIMPoroElasticity, Parse)
 {
-  SIMPoroElasticity<SIM2D> sim;
+  SIMPoroElasticity<SIM2D> sim({2,1});
   EXPECT_TRUE(sim.read("Plaxis1DVerif.xinp"));
 
   const PoroElasticity& poro = static_cast<const PoroElasticity&>(*sim.getProblem());
