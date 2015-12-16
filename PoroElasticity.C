@@ -64,31 +64,13 @@ PoroElasticity::MixedElmMats::MixedElmMats ()
 
 void PoroElasticity::MixedElmMats::makeNewtonMatrix(Matrix& N, bool dopp) const
 {
-  size_t i,j;
   size_t n = A[uu].rows();
-  size_t m = A[pp].rows();
 
-  for (i = 1; i <= n; i++)
-  {
-    for (j = 1; j <= n; j++)
-      N(i,j) = A[uu](i,j);
-    for (j = 1; j <= m; j++)
-    {
-      size_t k = n+j;
-      N(i,k) = A[up](i,j);
-      N(k,i) = A[up](i,j);
-    }
-  }
-
-  if (dopp) {
-    for (i = 1; i <= m; i++)
-      for (j = 1; j <= m; j++)
-      {
-        size_t ki = n+i;
-        size_t kj = n+j;
-        N(ki,kj) = A[pp](i,j);
-      }
-  }
+  N.fillBlock(A[uu], 1, 1);
+  N.fillBlock(A[up], 1, 1+n);
+  N.fillBlock(A[up], 1+n, 1, true);
+  if (dopp)
+    N.fillBlock(A[pp], 1+n, 1+n);
 }
 
 
@@ -105,15 +87,10 @@ const Matrix& PoroElasticity::MixedElmMats::getNewtonMatrix () const
 const Vector& PoroElasticity::MixedElmMats::getRHSVector () const
 {
   Vector& F = const_cast<Vector&>(b[Fres]);
-  size_t i;
   size_t n = b[Fu].size();
-  size_t m = b[Fp].size();
 
-  for (i = 1; i <= n; i++)
-    F(i) = b[Fu](i);
-
-  for (i = 1; i <= m; i++)
-    F(n+i) = b[Fp](i);
+  std::copy(b[Fu].begin(), b[Fu].end(), F.begin());
+  std::copy(b[Fp].begin(), b[Fp].end(), F.begin()+n);
 
   F += b[Fprev];
 
@@ -163,15 +140,9 @@ const Matrix& PoroElasticity::NonMixedElmMats::getNewtonMatrix () const
 const Vector& PoroElasticity::NonMixedElmMats::getRHSVector () const
 {
   Vector& F = const_cast<Vector&>(b[Fres]);
-  size_t n = b[Fp].size();
 
   size_t nsd = b[Fu].size()/b[Fp].size();
-  size_t nf = nsd + 1;
-  for (size_t i = 1; i <= n; i++) {
-    for (size_t k = 1; k <= nsd; ++k)
-      F((i-1)*nf+k) = b[Fu]((i-1)*nsd+k);
-    F(i*nf) = b[Fp](i);
-  }
+  utl::interleave(b[Fu], b[Fp], F, nsd, 1);
 
   F += b[Fprev];
 
@@ -566,13 +537,7 @@ bool PoroElasticity::finalizeElement (LocalIntegral& elmInt, const TimeDomain&, 
   } else {
     NonMixedElmMats* mMat = dynamic_cast<NonMixedElmMats*>(&elmInt);
     mMat->makeNewtonMatrix(elMat.A[Kprev], false);
-    size_t nf = nsd + 1;
-    prevSol.resize(nf*elMat.vec[P].size());
-    for (size_t i = 1; i <= elMat.vec[P].size(); i++) {
-      for (size_t k = 1; k <= nsd; ++k)
-        prevSol((i-1)*nf+k) = elmInt.vec[U]((i-1)*nsd+k);
-      prevSol(i*nf) = elmInt.vec[P](i);
-    }
+    utl::interleave(elmInt.vec[U], elmInt.vec[P], prevSol, nsd, 1);
   }
 
   elMat.b[Fprev] = elMat.A[Kprev]*prevSol;
