@@ -237,6 +237,41 @@ public:
     return true;
   }
 
+  //! \brief Prints a summary of the calculated solution to std::cout.
+  //! \param[in] solution The solution vector
+  //! \param[in] outPrec Number of digits after the decimal point in norm print
+  virtual void printSolutionSummary(const Vector& solution, int, const char*,
+                                    std::streamsize outPrec)
+  {
+    const size_t nsd = this->getNoSpaceDim();
+    size_t iMax[nsd+1];
+    double dMax[nsd+1];
+    double dNorm = this->solutionNorms(solution,dMax,iMax,this->getNoFields(1));
+    if (this->getNoFields(2) > 0) {
+      double dpNorm = this->solutionNorms(solution,dMax+nsd,
+                                          iMax+nsd,this->getNoFields(2), 'P');
+      dNorm = sqrt(pow(dNorm,2.0)+pow(dpNorm,2.0));
+    }
+
+    std::stringstream str;
+    if (this->adm.getProcId() == 0)
+    {
+      if (outPrec > 0) str.precision(outPrec);
+
+      str <<"  Primary solution summary: L2-norm            : "<< utl::trunc(dNorm);
+
+      char D = 'X';
+      for (size_t d = 0; d < nsd; d++, D++)
+        if (utl::trunc(dMax[d]) != 0.0)
+          str <<"\n                            Max "<< char('X'+d)
+              <<"-displacement : "<< dMax[d] <<" node "<< iMax[d];
+        str <<"\n                            Max pressure       : "
+            << dMax[nsd] <<" node "<< iMax[nsd] << std::endl;
+    }
+
+    utl::printSyncronized(std::cout,str,this->adm.getProcId());
+  }
+
 private:
   PoroElasticity poroel;            //!< Poroelasticity integrand
   Vectors solution;                 //!< Solution vectors
