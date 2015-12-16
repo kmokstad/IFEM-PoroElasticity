@@ -550,36 +550,34 @@ size_t PoroElasticity::getNoFields (int fld) const
 {
   if (fld < 2)
     return nsd+1;
-  else
-    return 6;
+  return nsd * (nsd + 1);
 }
 
 
 std::string PoroElasticity::getField1Name (size_t i, const char* prefix) const
 {
-  if (i == 11)
-    i = 4;
-  else if (i == 12)
-    i = 3;
-  else if (i >= nsd)
+  if (i >= nsd)
     i = 3;
 
-  static const char* s[5] = { "u_x", "u_y", "u_z", "p^w", "u" };
-  if(!prefix) return s[i];
+  static const char* s[5] = {"u_x", "u_y", "u_z", "p^w"};
 
+  if (!prefix)
+    return s[i];
   return prefix + std::string(" ") + s[i];
 }
 
 
 std::string PoroElasticity::getField2Name (size_t i, const char* prefix) const
 {
-  if (i >= nsd) return "";
+  static const char* s[][6] = {{"x", "y", "xy"},
+                               {"x", "y", "z", "yz", "xz", "xy"}};
+  size_t ncomps = nsd * (nsd + 1) / 2;
 
-  static const char* s2[] = {"eps_x","eps_y","eps_xy","sig_x",
-                             "sig_y","sig_z","sig_xy"}; // borked in 3D
-  if (!prefix) return s2[i];
+  std::string name = (i < ncomps ? "eps" : "sig") + std::string("_") + s[nsd-2][i % ncomps];
+  if (!prefix)
+    return name;
 
-  return prefix + std::string(" ") + s2[i];
+  return prefix + std::string(" ") + name;
 }
 
 
@@ -589,13 +587,15 @@ bool PoroElasticity::evalSol(Vector& s, const MxFiniteElement& fe,
 {
   Vector eV;
   std::vector<int>::const_iterator fstart = MNPC.begin() + elem_sizes[0];
-  utl::gather(IntVec(MNPC.begin(),fstart),nsd,s,eV);
+  utl::gather(IntVec(MNPC.begin(),fstart),nsd,primsol.front(),eV);
 
-  Vec3 V;
-  for (size_t s=0;s<nsd;++s)
-    V[s] = eV.dot(fe.basis(1),s,nsd);
+  Matrix B;
+  if (!formBmatrix(B, fe.grad(1)))
+    return false;
 
-  return true;
+  Vector disp(&eV[0], nsd * fe.basis(1).size());
+
+  return evalSolCommon(s, X, B, disp);
 }
 
 
@@ -604,11 +604,38 @@ bool PoroElasticity::evalSol(Vector& s, const FiniteElement& fe,
                              const std::vector<int>& MNPC) const
 {
   Vector eV;
-  utl::gather(MNPC,nsd+1,s,eV);
+  utl::gather(MNPC,nsd+1,primsol.front(),eV);
 
-  Vec3 V;
-  for (size_t s=0;s<nsd;++s)
-    V[s] = eV.dot(fe.basis(1),s,nsd+1);
+  Matrix B;
+  if (!formBmatrix(B, fe.dNdX))
+    return false;
+
+  Vector disp(nsd * fe.N.size());
+  for (size_t i = 0; i < nsd; i++)
+    for (size_t bfun = 0; bfun < fe.N.size(); bfun++)
+      disp[nsd*bfun+i] = eV[(nsd+1)*bfun+i];
+
+  return evalSolCommon(s, X, B, disp);
+}
+
+
+bool PoroElasticity::evalSolCommon(Vector& s, const Vec3 &X, const Matrix& B, const Vector& disp) const
+{
+  s.resize(getNoFields(2));
+
+  Vector strain;
+  B.multiply(disp, strain);
+
+  Matrix C;
+  formElasticMatrix(C, X);
+  Vector stress;
+  C.multiply(strain, stress);
+
+  size_t i = 0;
+  for (auto v : strain)
+    s[i++] = v;
+  for (auto v : stress)
+    s[i++] = v;
 
   return true;
 }

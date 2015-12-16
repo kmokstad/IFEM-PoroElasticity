@@ -173,7 +173,7 @@ public:
 
     // Write solution fields
     bool result = this->writeGlvS(solution.front(), iDump, nBlock,
-                                  tp.time.t, true, "vector", 89);
+                                  tp.time.t, false, "vector", 89);
 
     return result && this->writeGlvStep(iDump, tp.time.t);
   }

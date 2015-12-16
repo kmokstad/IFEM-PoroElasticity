@@ -246,6 +246,15 @@ public:
   virtual std::string getField2Name(size_t i, const char* prefix = 0) const;
 
 private:
+  //! \brief Evaluates the secondary solution at a result point
+  //! (shared code between mixed and non-mixed)
+  //! \param[out] s The solution field values at current point
+  //! \param[in] X Cartesian coordinates of current point
+  //! \param[in] B The B-matrix (displacement basis derivatives)
+  //! \param[in] disp The displacement coefficients
+  bool evalSolCommon(Vector& s, const Vec3 &X, const Matrix& B, const Vector& disp) const;
+
+private:
   Vec3 grav;              //!< Gravitation vector
   double sc;              //!< Scaling factor
 
