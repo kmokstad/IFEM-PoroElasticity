@@ -69,7 +69,7 @@ public:
 
   //! \brief The default constructor initializes all pointers to zero.
   //! \param[in] n Number of spatial dimensions
-  PoroElasticity(unsigned short int n = 2, int order = 1);
+  PoroElasticity(unsigned short int n, int order = 1);
 
   //! \brief The destructor frees the dynamically allocated data objects.
   virtual ~PoroElasticity() {}
@@ -156,18 +156,6 @@ public:
   //! \param elmInt Local integral for element
   virtual bool initElementBou(const std::vector<int>& MNPC,
                               LocalIntegral& elmInt);
-
-  //! \brief Calculates the strain-displacement matrix.
-  //! \param[in] Bmat The strain-displacement matrix
-  //! \param[in] dNdX First basis function gradients at current point
-  bool formBmatrix(Matrix& Bmat, const Matrix& dNdX) const;
-
-  //! \brief Evalutates the constitutive matrix at an integration point
-  //! \param[out] Cmat Constitutive matrix at current point
-  //! \param[in] E Young's modulus
-  //! \param[in] nu Poisson's ratio
-  bool formElasticMatrix(Matrix& Cmat, const Vec3& X) const;
-
   //! \brief Evaluates the integrand at an interior point
   //! \param elmInt The local integral object to receive the contributions
   //! \param[in] fe Finite element data of current integration point

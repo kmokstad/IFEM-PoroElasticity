@@ -15,6 +15,7 @@
 #define _PORO_MATERIAL_H
 
 #include "Function.h"
+#include "MatVec.h"
 #include "Vec3.h"
 #include "Vec3Oper.h"
 
@@ -85,6 +86,20 @@ public:
   double getStiffness(const Vec3& X) const;
   //! \brief Returns Poisson's ratio at the current point.
   double getPoisson(const Vec3& X) const;
+
+  //! \brief Calculates the strain-displacement matrix.
+  //! \param[in] Bmat The strain-displacement matrix
+  //! \param[in] dNdX First basis function gradients at current point
+  //! \param[in] nsd Number of spatial dimensions
+  bool formBmatrix(Matrix& Bmat, const Matrix& dNdX, size_t nsd) const;
+
+  //! \brief Evalutates the constitutive matrix at an integration point
+  //! \param[out] Cmat Constitutive matrix at current point
+  //! \param[in] E Young's modulus
+  //! \param[in] nu Poisson's ratio
+  //! \param[in] nsd Number of spatial dimensions
+  bool formElasticMatrix(Matrix& Cmat, const Vec3& X, size_t nsd) const;
+
 protected:
   FuncConstPair<RealFunc> Emod; //!< Young's modulus
   FuncConstPair<RealFunc> nu;   //!< Poisson's ratio

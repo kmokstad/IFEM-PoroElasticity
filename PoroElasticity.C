@@ -312,71 +312,13 @@ bool PoroElasticity::initElementBou (const std::vector<int>& MNPC,
 }
 
 
-bool PoroElasticity::formBmatrix (Matrix& Bmat, const Matrix& dNdX) const
-{
-  const size_t nenod = dNdX.rows();
-  const size_t nstrc = nsd*(nsd+1)/2;
-  Bmat.resize(nstrc*nsd,nenod,true);
-  if (dNdX.cols() < nsd)
-  {
-    std::cerr << " *** PoroElasticity::formBmatrix: Invalid dimension on dN1dX, "
-              << dNdX.rows() << "x" << dNdX.cols() << "." << std::endl;
-    return false;
-  }
-
-#define INDEX(i,j) i+nstrc*(j-1)
-
-  // Strain-displacement matrix for 2D elements
-  for (size_t i = 1; i <= nenod; i++)
-  {
-    Bmat(INDEX(1,1),i) = dNdX(i,1);
-    Bmat(INDEX(2,2),i) = dNdX(i,2);
-    Bmat(INDEX(3,1),i) = dNdX(i,2);
-    Bmat(INDEX(3,2),i) = dNdX(i,1);
-  }
-
-#undef INDEX
-
-  Bmat.resize(nstrc,nsd*nenod);
-
-  return true;
-}
-
-
-bool PoroElasticity::formElasticMatrix(Matrix& Cmat, const Vec3& X) const
-{
-  if (!mat)
-    return false;
-
-  double E = mat->getStiffness(X);
-  double nu = mat->getPoisson(X);
-
-  double C33 = E/(2.0+2.0*nu);
-  double C12 = (E*nu)/((1.0+nu)*(1.0-2.0*nu));
-  double C11 = C12 + 2.0*C33;
-
-  const size_t nstrc = nsd*(nsd+1)/2;
-
-  Cmat.resize(nstrc,nstrc,true);
-
-  Cmat(1,1) = C11;
-  Cmat(1,2) = C12;
-  Cmat(2,1) = C12;
-  Cmat(2,2) = C11;
-  Cmat(3,3) = C33;
-
-  Cmat.resize(nstrc,nstrc);
-
-  return true;
-}
-
-
 bool PoroElasticity::evalIntMx (LocalIntegral& elmInt,
                                 const MxFiniteElement& fe,
                                 const TimeDomain& time, const Vec3& X) const
 {
   return evalInt(elmInt, fe, time, X);
 }
+
 
 bool PoroElasticity::evalInt (LocalIntegral& elmInt,
                               const FiniteElement& fe,
@@ -392,10 +334,10 @@ bool PoroElasticity::evalInt (LocalIntegral& elmInt,
   size_t i,j,k;
   Matrix Bmat, Cmat, CB;
 
-  if (!this->formBmatrix(Bmat,fe.grad(1)))
+  if (!mat->formBmatrix(Bmat,fe.grad(1),nsd))
     return false;
 
-  if (!this->formElasticMatrix(Cmat,X))
+  if (!mat->formElasticMatrix(Cmat,X,nsd))
     return false;
 
   Vec3 permeability = mat->getPermeability(X);
@@ -413,13 +355,17 @@ bool PoroElasticity::evalInt (LocalIntegral& elmInt,
   double alpha = 1.0 - (Ko/Ks);
   // Inverse of the compressibility modulus
   double Minv = ((alpha - poro)/Ks) + (poro/Kw);
-  // m vector for 2D
-  Vec3 m(1,1,0);
 
   // Integration of the stiffness matrix
   CB.multiply(Cmat,Bmat,false,false);
   CB *= -1.0 * fe.detJxW;
   elMat.A[uu].multiply(Bmat,CB,true,false,true);
+
+  // Define the unit Voigt vector
+  Vector m(Cmat.rows());
+  for (i = 1; i <= m.size(); i++)
+    if (i <= nsd)
+      m(i) = 1.0;
 
   // Integration of the coupling matrix
   Matrix Kuptmp;
@@ -428,7 +374,7 @@ bool PoroElasticity::evalInt (LocalIntegral& elmInt,
 
   for (i = 1; i <= fe.basis(2).size(); i++)
     for (j = 1; j <= nstrc; j++)
-      Kuptmp(i,j) += scl*m[j-1]*alpha*fe.basis(2)(i)*fe.detJxW;
+      Kuptmp(i,j) += scl*m(j)*alpha*fe.basis(2)(i)*fe.detJxW;
 
   elMat.A[up].multiply(Bmat,Kuptmp,true,true,true);
 
@@ -590,7 +536,7 @@ bool PoroElasticity::evalSol(Vector& s, const MxFiniteElement& fe,
   utl::gather(IntVec(MNPC.begin(),fstart),nsd,primsol.front(),eV);
 
   Matrix B;
-  if (!formBmatrix(B, fe.grad(1)))
+  if (!mat->formBmatrix(B, fe.grad(1), nsd))
     return false;
 
   Vector disp(&eV[0], nsd * fe.basis(1).size());
@@ -607,7 +553,7 @@ bool PoroElasticity::evalSol(Vector& s, const FiniteElement& fe,
   utl::gather(MNPC,nsd+1,primsol.front(),eV);
 
   Matrix B;
-  if (!formBmatrix(B, fe.dNdX))
+  if (!mat->formBmatrix(B, fe.dNdX, nsd))
     return false;
 
   Vector disp(nsd * fe.N.size());
@@ -627,7 +573,7 @@ bool PoroElasticity::evalSolCommon(Vector& s, const Vec3 &X, const Matrix& B, co
   B.multiply(disp, strain);
 
   Matrix C;
-  formElasticMatrix(C, X);
+  mat->formElasticMatrix(C, X, nsd);
   Vector stress;
   C.multiply(strain, stress);
 
