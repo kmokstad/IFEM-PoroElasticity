@@ -5,30 +5,20 @@
 //!
 //! \date April 16 2015
 //!
-//! \author Yarded Bekele
+//! \author Yared Bekele
 //!
-//! \brief Simulation driver for poroelasticity problems
+//! \brief Simulation driver for poroelasticity problems.
 //!
 //==============================================================================
 
-#ifndef SIMPOROELASTICITY_H_
-#define SIMPOROELASTICITY_H_
-
+#ifndef _SIM_PORO_ELASTICITY_H_
+#define _SIM_PORO_ELASTICITY_H_
 
 #include "PoroElasticity.h"
-#include "SIM1D.h"
-#include "SIM2D.h"
-#include "SIM3D.h"
-#include "ASMbase.h"
-#include "AlgEqSystem.h"
-#include "ASMstruct.h"
 #include "Functions.h"
 #include "Utilities.h"
-#include "Profiler.h"
-#include "Property.h"
 #include "DataExporter.h"
 #include "tinyxml.h"
-#include "Vec3Oper.h"
 #include "TimeStep.h"
 #include "InitialConditionHandler.h"
 #include "SIMSolver.h"
@@ -135,18 +125,12 @@ public:
   }
 
   //! \brief Returns the name of this simulator (for use in the HDF5 export).
-  virtual std::string getName() const
-  {
-    return "PoroElasticity";
-  }
+  virtual std::string getName() const { return "PoroElasticity"; }
 
   //! \brief Obtain const reference to solution vector.
   //! \param[in] i Solution vector to get reference to.
   //! \return Const reference to requested vector.
-  const Vector& getSolution(int i)
-  {
-    return solution[i];
-  }
+  const Vector& getSolution(int i) { return solution[i]; }
 
   //! \brief Opens a new VTF-file and writes the model geometry to it.
   //! \param[in] fileName File name used to construct the VTF-file name from
@@ -161,8 +145,8 @@ public:
     return this->writeGlvG(geoBlk,fileName);
   }
 
-  //! \brief Saves the converged results to VTF file of a given time step.
-  //! \param[in] tp Time step identifier
+  //! \brief Saves the converged results of a given time step to VTF file.
+  //! \param[in] tp Time stepping parameters
   //! \param[in] nBlock Running VTF block counter
   bool saveStep(const TimeStep& tp, int& nBlock)
   {
@@ -170,12 +154,10 @@ public:
       return true;
 
     int iDump = 1 + tp.step/Dim::opt.saveInc;
+    if (!this->writeGlvS(solution.front(),iDump,nBlock,tp.time.t,"vector",89))
+      return false;
 
-    // Write solution fields
-    bool result = this->writeGlvS(solution.front(), iDump, nBlock,
-                                  tp.time.t, false, "vector", 89);
-
-    return result && this->writeGlvStep(iDump, tp.time.t);
+    return this->writeGlvStep(iDump,tp.time.t);
   }
 
   //! \brief Initializes the simulator time stepping loop.
@@ -313,4 +295,4 @@ struct SolverConfigurator< SIMPoroElasticity<Dim> > {
   }
 };
 
-#endif /* SIMPOROELASTICITY_H_ */
+#endif

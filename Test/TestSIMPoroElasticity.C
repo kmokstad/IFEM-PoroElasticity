@@ -11,6 +11,7 @@
 //==============================================================================
 
 #include "SIMPoroElasticity.h"
+#include "SIM2D.h"
 
 #include "gtest/gtest.h"
 
