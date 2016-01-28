@@ -8,13 +8,14 @@ set(CMAKE_MODULE_PATH ${CMAKE_MODULE_PATH}
 
 if(NOT IFEM_CONFIGURED)
   find_package(IFEM REQUIRED)
+  include_directories(${IFEM_INCLUDE_DIRS})
+  add_definitions(${IFEM_DEFINITIONS})
 endif()
 
 set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} ${IFEM_CXX_FLAGS}")
 
 # Generate regtest script with correct paths
-configure_file(${PROJECT_SOURCE_DIR}/../Common/scripts/regtest.sh.in
-               regtest.sh)
+configure_file(${IFEM_REGTEST_SCRIPT} regtest.sh)
 
 include_directories(${IFEM_INCLUDES} ../Common ${PROJECT_SOURCE_DIR})
 
@@ -32,6 +33,7 @@ target_link_libraries(PoroElasticity CommonPoro ${IFEM_LIBRARIES})
 install(TARGETS PoroElasticity DESTINATION bin COMPONENT bin)
 
 enable_testing()
+include(IFEMTesting)
 
 # Regression tests
 if(IFEM_USE_PARALLEL_PETSC)
@@ -41,8 +43,6 @@ else()
   ifem_add_test(Plaxis1DVerif-nonmixed.reg PoroElasticity)
   ifem_add_test(OGSBenchmark1D.reg PoroElasticity)
   ifem_add_test(OGSBenchmark1D-nonmixed.reg PoroElasticity)
-  ifem_add_test(SoilColumn3D.reg PoroElasticity)
-  ifem_add_test(SoilColumn3D-nonmixed.reg PoroElasticity)
   if(LRSpline_FOUND)
     ifem_add_test(Plaxis1DVerif-LR.reg PoroElasticity)
     ifem_add_test(OGSBenchmark1D-LR.reg PoroElasticity)
