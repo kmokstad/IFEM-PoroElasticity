@@ -22,7 +22,6 @@
 #include "Profiler.h"
 #include "HDF5Writer.h"
 #include "XMLWriter.h"
-#include "VTF.h"
 #include "AppCommon.h"
 
 

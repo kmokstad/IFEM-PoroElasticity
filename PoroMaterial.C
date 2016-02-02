@@ -11,14 +11,14 @@
 //!
 //==============================================================================
 
-
 #include "PoroMaterial.h"
-
+#include "Utilities.h"
 #include "Functions.h"
+#include "Tensor.h"
+#include "Vec3Oper.h"
+#include "MatVec.h"
 #include "IFEM.h"
 #include "tinyxml.h"
-#include "Utilities.h"
-#include "Vec3.h"
 
 
 template<>
@@ -45,14 +45,13 @@ VecFunc* PoroMaterial::FuncConstPair<VecFunc>::parse(const char* val,
 }
 
 
-  template<class T>
+template<class T>
 static bool propertyParse(PoroMaterial::FuncConstPair<T>& data,
                           const TiXmlElement* elem,
-                          const std::string& attr,
-                          const std::string& tag)
+                          const char* attr, const char* tag)
 {
   std::string constant;
-  if (utl::getAttribute(elem,attr.c_str(),constant)) {
+  if (utl::getAttribute(elem,attr,constant)) {
     std::stringstream str;
     str << constant;
     str >> data.constant;
@@ -60,18 +59,16 @@ static bool propertyParse(PoroMaterial::FuncConstPair<T>& data,
   }
 
   const TiXmlElement* child = elem->FirstChildElement(tag);
-  if (child) {
-    IFEM::cout <<" ";
-    std::string type;
-    utl::getAttribute(child,"type",type,true);
-    const TiXmlNode* aval;
-    if ((aval = child->FirstChild()))
-      data.function = data.parse(aval->Value(),type);
+  if (!child) return false;
+  const TiXmlNode* aval = child->FirstChild();
+  if (!aval) return false;
 
-    return data.function != nullptr;
-  }
+  IFEM::cout <<" ";
+  std::string type;
+  utl::getAttribute(child,"type",type,true);
+  data.function = data.parse(aval->Value(),type);
 
- return false;
+  return data.function != nullptr;
 }
 
 
@@ -96,17 +93,17 @@ void PoroMaterial::parse(const TiXmlElement* elem)
 
 void PoroMaterial::printLog() const
 {
-  IFEM::cout << "\tConstitutive Properties: "
-             << "\n\t\tYoung's Modulus, E = " << Emod.constant
-             << "\n\t\tPoisson's Ratio, nu = " << nu.constant << std::endl;
-  IFEM::cout << "\tDensities: "
-             << "\n\t\tDensity of Fluid, rhof = " << rhof.constant
-             << "\n\t\tDensity of Solid, rhos = " << rhos.constant << std::endl;
-  IFEM::cout << "\tBulk Moduli: "
-             << "\n\t\tBulk Modulus of Water, Kw = " << bulkw.constant
-             << "\n\t\tBulk Modulus of Solid, Ks = " << bulks.constant
-             << "\n\t\tBulk Modulus of Medium, Ko = " << bulkm.constant << std::endl;
-  IFEM::cout <<"\tPorosity, n = " << porosity.constant << std::endl;
+  IFEM::cout <<"\tConstitutive Properties: "
+             <<"\n\t\tYoung's Modulus, E = "<< Emod.constant
+             <<"\n\t\tPoisson's Ratio, nu = "<< nu.constant;
+  IFEM::cout <<"\n\tDensities: "
+             <<"\n\t\tDensity of Fluid, rhof = "<< rhof.constant
+             <<"\n\t\tDensity of Solid, rhos = "<< rhos.constant;
+  IFEM::cout <<"\n\tBulk Moduli: "
+             <<"\n\t\tBulk Modulus of Water, Kw = "<< bulkw.constant
+             <<"\n\t\tBulk Modulus of Solid, Ks = "<< bulks.constant
+             <<"\n\t\tBulk Modulus of Medium, Ko = "<< bulkm.constant;
+  IFEM::cout <<"\n\tPorosity, n = "<< porosity.constant << std::endl;
 }
 
 
@@ -152,6 +149,13 @@ double PoroMaterial::getSolidDensity(const Vec3& X) const
 }
 
 
+double PoroMaterial::getMassDensity(const Vec3& X) const
+{
+  double poro = porosity.evaluate(X);
+  return rhos.evaluate(X)*(1.0-poro) + rhof.evaluate(X)*poro;
+}
+
+
 double PoroMaterial::getBulkWater(const Vec3& X) const
 {
   return bulkw.evaluate(X);
@@ -182,124 +186,55 @@ double PoroMaterial::getPoisson(const Vec3& X) const
 }
 
 
-bool PoroMaterial::formBmatrix (Matrix& Bmat, const Matrix& dNdX, size_t nsd) const
+bool PoroMaterial::evaluate (Matrix& Cmat, SymmTensor& sigma, double& U,
+                             const FiniteElement&, const Vec3& X,
+                             const Tensor&, const SymmTensor& eps, char iop,
+                             const TimeDomain*, const Tensor*) const
 {
-  const size_t nenod = dNdX.rows();
+  double E = Emod.evaluate(X);
+  double v = nu.evaluate(X);
+
+  const size_t nsd = eps.dim();
   const size_t nstrc = nsd*(nsd+1)/2;
-  Bmat.resize(nstrc*nsd,nenod,true);
-  if (dNdX.cols() < nsd)
+  Cmat.resize(nstrc,nstrc,true);
+
+  if (nsd == 1)
   {
-    std::cerr << " *** PoroElasticity::formBmatrix: Invalid dimension on dN1dX, "
-              << dNdX.rows() << "x" << dNdX.cols() << "." << std::endl;
+    // Constitutive matrix for 1D
+    Cmat(1,1) = E;
+    if (iop > 0)
+    {
+      sigma = eps; sigma *= E;
+      if (iop == 3)
+        U = 0.5*sigma(1,1)*eps(1,1);
+    }
+    return true;
+  }
+  else if (v < 0.0 || v >= 0.5)
+  {
+    std::cerr <<" *** PoroMaterial::evaluate: Poisson's ratio "<< v
+              <<" out of range [0,0.5>."<< std::endl;
     return false;
   }
 
-#define INDEX(i,j) i+nstrc*(j-1)
-
-  switch (nsd) {
-    case 1:
-    // Strain-displacement matrix for 1D elements
-    //
-    //  [B] = | d/dx | * [N]
-
-    for (size_t i = 1; i <= nenod; i++)
-      Bmat(1,i) = dNdX(i,1);
-    break;
-
-    case 2:
-    // Strain-displacement matrix for 2D elements
-    //
-    //         | d/dx   0   |
-    //   [B] = |  0    d/dy | * [N]
-    //         | d/dy  d/dx |
-
-    for (size_t i = 1; i <= nenod; i++)
-    {
-      // Normal strain part
-      Bmat(INDEX(1,1),i) = dNdX(i,1);
-      Bmat(INDEX(2,2),i) = dNdX(i,2);
-      // Shear strain part
-      Bmat(INDEX(3,1),i) = dNdX(i,2);
-      Bmat(INDEX(3,2),i) = dNdX(i,1);
-    }
-    break;
-
-    case 3:
-    // Strain-displacement matrix for 3D elements:
-    //
-    //         | d/dx   0     0   |
-    //         |  0    d/dy   0   |
-    //   [B] = |  0     0    d/dz | * [N]
-    //         | d/dy  d/dx   0   |
-    //         | d/dz   0    d/dx |
-    //         |  0    d/dz  d/dy |
-
-    for (size_t i = 1; i <= nenod; i++)
-    {
-      // Normal strain part
-      Bmat(INDEX(1,1),i) = dNdX(i,1);
-      Bmat(INDEX(2,2),i) = dNdX(i,2);
-      Bmat(INDEX(3,3),i) = dNdX(i,3);
-      // Shear strain part
-      Bmat(INDEX(4,1),i) = dNdX(i,2);
-      Bmat(INDEX(4,2),i) = dNdX(i,1);
-      Bmat(INDEX(5,2),i) = dNdX(i,3);
-      Bmat(INDEX(5,3),i) = dNdX(i,2);
-      Bmat(INDEX(6,1),i) = dNdX(i,3);
-      Bmat(INDEX(6,3),i) = dNdX(i,1);
-    }
-    break;
-
-    default:
-      std::cerr <<" *** PoroMaterial::formBmatrix: nsd = " << nsd << std::endl;
-      return false;
-  }
-
-#undef INDEX
-
-  Bmat.resize(nstrc,nsd*nenod);
-
-  return true;
-}
-
-
-bool PoroMaterial::formElasticMatrix(Matrix& Cmat, const Vec3& X, size_t nsd) const
-{
-  double E = getStiffness(X);
-  double nu = getPoisson(X);
-
-  double C3 = E/(2.0+2.0*nu);
-  double C2 = (E*nu)/((1.0+nu)*(1.0-2.0*nu));
+  double C3 = E/(2.0+2.0*v);
+  double C2 = C3*v/(0.5-v);
   double C1 = C2 + 2.0*C3;
 
-  const size_t nstrc = nsd*(nsd+1)/2;
+  // Constitutive matrix for 2D plane-strain and 3D
+  for (size_t i = 1; i <= nstrc; i++)
+    for (size_t j = 1; j <= nstrc; j++)
+      if (i == j)
+        Cmat(i,j) = i <= nsd ? C1 : C3;
+      else if (i <= nsd && j <= nsd)
+        Cmat(i,j) = C2;
 
-  Cmat.resize(nstrc,nstrc,true);
-
-  switch (nsd) {
-    case 1:
-    // Elastic modulus for 1D elements
-    Cmat(1,1) = E;
-    break;
-
-    case 2: case 3:
-    // Elastic matrix for 2D plane-strain and 3D elements
-    for (size_t i = 1; i <= nstrc; i++) {
-      for (size_t j = 1; j <= nstrc; j++) {
-        if (i <= nsd && j <= nsd && i == j)
-          Cmat(i,j) = C1;
-        else if (i <= nsd && j <= nsd && i != j)
-          Cmat(i,j) = C2;
-        else if (i > nsd && i == j)
-          Cmat(i,j) = C3;
-      }
-    }
-    break;
-
-    default:
-      std::cerr <<" *** PoroMaterial::formElasticMatrix: nsd = " << nsd << std::endl;
+  if (iop > 0) // Calculate the stress tensor, sigma = C*eps
+    if (!Cmat.multiply(eps,sigma))
       return false;
-  }
+
+  if (iop == 3) // Calculate strain energy density, // U = 0.5*sigma:eps
+    U = 0.5*sigma.innerProd(eps);
 
   return true;
 }

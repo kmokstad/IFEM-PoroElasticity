@@ -7,21 +7,19 @@
 //!
 //! \author Yared Bekele
 //!
-//! \brief Integrand implementations for time-dependent poroelasticity problems
+//! \brief Integrand implementations for time-dependent poroelasticity problems.
 //!
 //==============================================================================
 
 #include "PoroElasticity.h"
-#include "ASMbase.h"
-#include "ASMmxBase.h"
+#include "PoroMaterial.h"
 #include "FiniteElement.h"
 #include "TimeDomain.h"
 #include "Utilities.h"
 #include "Tensor.h"
-#include "ElmMats.h"
-#include "ElmNorm.h"
 #include "Vec3Oper.h"
-#include "VTF.h"
+
+typedef std::vector<int> IntVec;  //!< General integer vector
 
 
 //! \brief Enum for element level solution vectors
@@ -150,45 +148,11 @@ const Vector& PoroElasticity::NonMixedElmMats::getRHSVector () const
 }
 
 
-PoroElasticity::PoroElasticity (unsigned short int n, int order) :
-  gacc(9.81), mat(nullptr)
+PoroElasticity::PoroElasticity (unsigned short int n, int order) : Elasticity(n)
 {
-  nsd = n;
   primsol.resize(1+order); // Current and previous timestep solutions required
-  tracFld = nullptr;
-  fluxFld = nullptr;
-  eS = 1;
   sc = 0.0;
-}
-
-
-Vec3 PoroElasticity::getTraction(const Vec3& X, const Vec3& n) const
-{
-  if (fluxFld)
-    return (*fluxFld)(X);
-  else if (tracFld)
-    return (*tracFld)(X,n);
-  else
-    return Vec3();
-}
-
-
-double PoroElasticity::getMassDensity (const Vec3& X) const
-{
-  // Density of two-phase porous medium
-  if (mat)
-    return mat->getSolidDensity(X)*(1.0-mat->getPorosity(X)) +
-           mat->getFluidDensity(X)*mat->getPorosity(X);
-
-  return 0.0;
-}
-
-
-Vec3 PoroElasticity::getBodyForce(const Vec3& X) const
-{
-  Vec3 f = grav;
-  f *= this->getMassDensity(X);
-  return f;
+  gacc = 9.81; //kmo: Danger! hard-coded physical property. Why not derive this one from gravity.length() instead ???
 }
 
 
@@ -325,32 +289,32 @@ bool PoroElasticity::evalInt (LocalIntegral& elmInt,
                               const TimeDomain& time, const Vec3& X) const
 {
   ElmMats& elMat = static_cast<ElmMats&>(elmInt);
-
-  if (!mat) {
+  const PoroMaterial* pmat = dynamic_cast<const PoroMaterial*>(material);
+  if (!pmat) {
     std::cerr << __FUNCTION__ << ": No material data." << std::endl;
     return false;
   }
 
   size_t i,j,k;
   Matrix Bmat, Cmat, CB;
-
-  if (!mat->formBmatrix(Bmat,fe.grad(1),nsd))
+  if (!this->formBmatrix(Bmat,fe.dNdX))
     return false;
 
-  if (!mat->formElasticMatrix(Cmat,X,nsd))
+  SymmTensor eps(nsd), sigma(nsd); double U = 0.0;
+  if (!material->evaluate(Cmat,sigma,U,fe,X,eps,eps,0))
     return false;
 
-  Vec3 permeability = mat->getPermeability(X);
+  Vec3 permeability = pmat->getPermeability(X);
 
   double scl(sc);
   if (scl == 0.0)
-    scl = sqrt(mat->getStiffness(X)*mat->getFluidDensity(X)*gacc/(permeability[0]*time.dt));
+    scl = sqrt(pmat->getStiffness(X)*pmat->getFluidDensity(X)*gacc/(permeability[0]*time.dt));
 
   // Biot's coefficient
-  double Ko = mat->getBulkMedium(X);
-  double Ks = mat->getBulkSolid(X);
-  double Kw = mat->getBulkWater(X);
-  double poro = mat->getPorosity(X);
+  double Ko = pmat->getBulkMedium(X);
+  double Ks = pmat->getBulkSolid(X);
+  double Kw = pmat->getBulkWater(X);
+  double poro = pmat->getPorosity(X);
 
   double alpha = 1.0 - (Ko/Ks);
   // Inverse of the compressibility modulus
@@ -391,7 +355,7 @@ bool PoroElasticity::evalInt (LocalIntegral& elmInt,
   for (i = 1; i <= fe.basis(2).size(); i++)
     for (j = 1; j <= fe.basis(2).size(); j++)
       for (k = 1; k <= nsd; k++)
-        Kpp(i,j) += scl*scl*fe.grad(2)(i,k)*(permeability[k-1]/(mat->getFluidDensity(X)*gacc))*fe.grad(2)(j,k)*fe.detJxW;
+        Kpp(i,j) += scl*scl*fe.grad(2)(i,k)*(permeability[k-1]/(pmat->getFluidDensity(X)*gacc))*fe.grad(2)(j,k)*fe.detJxW;
 
   elMat.A[pp] += Cpp;
   elMat.A[pp].add(Kpp,time.dt);
@@ -426,9 +390,10 @@ bool PoroElasticity::evalBou (LocalIntegral& elmInt,
     std::cerr << " *** PoroElasticity::evalBouMx: No fluxes/tractions." << std::endl;
     return false;
   }
-  else if (!eS)
-  {
-    std::cerr << " *** PoroElasticity::evalBouMx: No load vector." << std::endl;
+
+  const PoroMaterial* pmat = dynamic_cast<const PoroMaterial*>(material);
+  if (!pmat) {
+    std::cerr << __FUNCTION__ << ": No material data." << std::endl;
     return false;
   }
 
@@ -441,13 +406,13 @@ bool PoroElasticity::evalBou (LocalIntegral& elmInt,
   Vec3 dtr;
   dtr = tr2 - tr1;
 
-  Vec3 permeability = mat->getPermeability(X);
+  Vec3 permeability = pmat->getPermeability(X);
 
-  Vec3 bf = this->getBodyForce(X);
+  Vec3 bf = this->getBodyforce(X);
 
   double scl(sc);
   if (scl == 0.0)
-    scl = sqrt(mat->getStiffness(X)*mat->getFluidDensity(X)*gacc/(permeability[0]*time.dt));
+    scl = sqrt(pmat->getStiffness(X)*pmat->getFluidDensity(X)*gacc/(permeability[0]*time.dt));
 
   // Integrate the force vector fu
   ElmMats& elMat = static_cast<ElmMats&>(elmInt);
@@ -461,7 +426,7 @@ bool PoroElasticity::evalBou (LocalIntegral& elmInt,
   {
     double fpvec = 0.0;
     for (size_t k = 1; k <= nsd; k++)
-      fpvec += scl*fe.grad(2)(i,k)*(permeability[k-1]/gacc)*grav[k-1];
+      fpvec += scl*fe.grad(2)(i,k)*(permeability[k-1]/gacc)*gravity[k-1];
     elMat.b[Fp](i) = fpvec*time.dt*fe.detJxW;
   }
 
@@ -535,13 +500,7 @@ bool PoroElasticity::evalSol(Vector& s, const MxFiniteElement& fe,
   std::vector<int>::const_iterator fstart = MNPC.begin() + elem_sizes[0];
   utl::gather(IntVec(MNPC.begin(),fstart),nsd,primsol.front(),eV);
 
-  Matrix B;
-  if (!mat->formBmatrix(B, fe.grad(1), nsd))
-    return false;
-
-  Vector disp(&eV[0], nsd * fe.basis(1).size());
-
-  return evalSolCommon(s, X, B, disp);
+  return this->evalSolCommon(s,fe,X,Vector(&eV[0],nsd*fe.N.size()));
 }
 
 
@@ -552,36 +511,40 @@ bool PoroElasticity::evalSol(Vector& s, const FiniteElement& fe,
   Vector eV;
   utl::gather(MNPC,nsd+1,primsol.front(),eV);
 
-  Matrix B;
-  if (!mat->formBmatrix(B, fe.dNdX, nsd))
-    return false;
-
   Vector disp(nsd * fe.N.size());
   for (size_t i = 0; i < nsd; i++)
     for (size_t bfun = 0; bfun < fe.N.size(); bfun++)
       disp[nsd*bfun+i] = eV[(nsd+1)*bfun+i];
 
-  return evalSolCommon(s, X, B, disp);
+  return this->evalSolCommon(s,fe,X,disp);
 }
 
 
-bool PoroElasticity::evalSolCommon(Vector& s, const Vec3 &X, const Matrix& B, const Vector& disp) const
+bool PoroElasticity::evalSolCommon (Vector& s,
+                                    const FiniteElement& fe, const Vec3& X,
+                                    const Vector& disp) const
 {
-  s.resize(getNoFields(2));
+  if (!material)
+  {
+    std::cerr << __FUNCTION__ <<": No material data."<< std::endl;
+    return false;
+  }
 
-  Vector strain;
-  B.multiply(disp, strain);
+  Matrix Bmat;
+  if (!this->formBmatrix(Bmat,fe.dNdX))
+    return false;
 
-  Matrix C;
-  mat->formElasticMatrix(C, X, nsd);
-  Vector stress;
-  C.multiply(strain, stress);
+  SymmTensor eps(nsd), sigma(nsd);
+  if (!Bmat.multiply(disp,eps))
+    return false;
 
-  size_t i = 0;
-  for (auto v : strain)
-    s[i++] = v;
-  for (auto v : stress)
-    s[i++] = v;
+  Matrix Cmat; double U = 0.0;
+  if (!material->evaluate(Cmat,sigma,U,fe,X,eps,eps))
+    return false;
+
+  s = eps;
+  const RealArray& sig = sigma;
+  s.insert(s.end(),sig.begin(),sig.end());
 
   return true;
 }

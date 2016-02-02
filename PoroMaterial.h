@@ -14,10 +14,9 @@
 #ifndef _PORO_MATERIAL_H
 #define _PORO_MATERIAL_H
 
+#include "MaterialBase.h"
 #include "Function.h"
-#include "MatVec.h"
 #include "Vec3.h"
-#include "Vec3Oper.h"
 
 class TiXmlElement;
 
@@ -26,12 +25,11 @@ class TiXmlElement;
   \brief Class representing a material model for a poroelastic problem.
 */
 
-class PoroMaterial
+class PoroMaterial : public Material
 {
 public:
-  /*! \brief Helper template for wrapping a constant/function pair */
-    template<class Function>
-  struct FuncConstPair
+  // \brief Helper template for wrapping a constant/function pair.
+  template<class Function> struct FuncConstPair
   {
     Function* function;                 //!< Function definition
     typename Function::Output constant; //!< Constant
@@ -39,10 +37,10 @@ public:
     //! \brief Constructor.
     FuncConstPair() { function = nullptr; constant = 0.0; }
 
-    //! \brief Parse an XML element. Specialized per type
-    Function* parse(const char* val, const std::string& type) { return nullptr; }
+    //! \brief Parse an XML element. Specialized per function type.
+    Function* parse(const char*, const std::string&) { return nullptr; }
 
-    //! \brief Evaluate function.
+    //! \brief Evaluates the function.
     //! \param[in] X the value to evaluate at.
     typename Function::Output evaluate(const typename Function::Input& X) const
     {
@@ -52,26 +50,27 @@ public:
 
   //! \brief Empty constructor.
   PoroMaterial() {}
-
   //! \brief Empty destructor.
-  ~PoroMaterial() {}
+  virtual ~PoroMaterial() {}
 
   //! \brief Parses material parementers from an XML element.
-  void parse(const TiXmlElement*);
+  virtual void parse(const TiXmlElement* elem);
 
   //! \brief Prints out material parameters to the log stream.
-  void printLog() const;
+  virtual void printLog() const;
 
   //! \brief Evaluates the mass density of the fluid at current point.
   double getFluidDensity(const Vec3&) const;
   //! \brief Evaluates the mass density of the solid at current point.
   double getSolidDensity(const Vec3&) const;
+  //! \brief Evaluates the mass density at current point.
+  virtual double getMassDensity(const Vec3&) const;
+  //! \brief Evaluates the heat capacity for given temperature.
+  virtual double getHeatCapacity(double T) const;
+  //! \brief Evaluates the thermal conductivity for given temperature.
+  virtual double getThermalConductivity(double T) const;
   //! \brief Evaluates the thermal expansion coefficient for given temperature.
-  double getThermalExpansion(double) const;
-  //! \brief Evaluates the heat capacity at the current point
-  double getHeatCapacity(double T) const;
-  //! \brief Evaluates the thermal conductivity at the current point
-  double getThermalConductivity(double T) const;
+  virtual double getThermalExpansion(double T) const;
   //! \brief Returns porosity at the current point.
   double getPorosity(const Vec3& X) const;
   //! \brief Returns permeability at the current point.
@@ -83,22 +82,25 @@ public:
   //! \brief Returns bulk modulus of the medium at the current point.
   double getBulkMedium(const Vec3& X) const;
   //! \brief Returns stiffness at the current point.
-  double getStiffness(const Vec3& X) const;
+  virtual double getStiffness(const Vec3& X) const;
   //! \brief Returns Poisson's ratio at the current point.
-  double getPoisson(const Vec3& X) const;
+  virtual double getPoisson(const Vec3& X) const;
 
-  //! \brief Calculates the strain-displacement matrix.
-  //! \param[in] Bmat The strain-displacement matrix
-  //! \param[in] dNdX First basis function gradients at current point
-  //! \param[in] nsd Number of spatial dimensions
-  bool formBmatrix(Matrix& Bmat, const Matrix& dNdX, size_t nsd) const;
-
-  //! \brief Evalutates the constitutive matrix at an integration point
+  //! \brief Evaluates the constitutive relation at an integration point.
   //! \param[out] Cmat Constitutive matrix at current point
-  //! \param[in] E Young's modulus
-  //! \param[in] nu Poisson's ratio
-  //! \param[in] nsd Number of spatial dimensions
-  bool formElasticMatrix(Matrix& Cmat, const Vec3& X, size_t nsd) const;
+  //! \param[out] sigma Stress tensor at current point
+  //! \param[out] U Strain energy density at current point
+  //! \param[in] X Cartesian coordinates of current point
+  //! \param[in] eps Strain tensor at current point
+  //! \param[in] iop Calculation option;
+  //!   0 : Calculate the constitutive matrix only,
+  //!   1 : Calculate Cauchy stresses and the constitutive matrix,
+  //!   3 : Calculate the strain energy density only.
+  virtual bool evaluate(Matrix& C, SymmTensor& sigma, double& U,
+                        const FiniteElement&, const Vec3& X,
+                        const Tensor&, const SymmTensor& eps,
+                        char iop = 1, const TimeDomain* = nullptr,
+                        const Tensor* = nullptr) const;
 
 protected:
   FuncConstPair<RealFunc> Emod; //!< Young's modulus

@@ -15,6 +15,7 @@
 #define _SIM_PORO_ELASTICITY_H_
 
 #include "PoroElasticity.h"
+#include "PoroMaterial.h"
 #include "Functions.h"
 #include "Utilities.h"
 #include "DataExporter.h"
@@ -22,8 +23,8 @@
 #include "TimeStep.h"
 #include "InitialConditionHandler.h"
 #include "SIMSolver.h"
+#include "Vec3Oper.h"
 #include "Profiler.h"
-#include "PoroMaterial.h"
 #include <memory>
 
 

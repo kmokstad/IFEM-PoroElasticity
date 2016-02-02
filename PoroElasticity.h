@@ -7,25 +7,22 @@
 //!
 //! \author Yared Bekele
 //!
-//! \brief Integrand implementations for time-dependent PoroElasticity problems
+//! \brief Integrand implementations for time-dependent PoroElasticity problems.
 //!
 //==============================================================================
 
-#ifndef POROELASTICITY_H_
-#define POROELASTICITY_H_
+#ifndef _PORO_ELASTICITY_H_
+#define _PORO_ELASTICITY_H_
 
-#include "BDF.h"
-#include "Vec3.h"
+#include "Elasticity.h"
 #include "ElmMats.h"
-#include "IntegrandBase.h"
-#include "PoroMaterial.h"
 
 
 /*!
- * \brief Class representing the integrand of the PoroElasticity problem.
+  \brief Class representing the integrand of the PoroElasticity problem.
 */
 
-class PoroElasticity : public IntegrandBase
+class PoroElasticity : public Elasticity
 {
   /*!
    * \brief Class representing an element matrix for the mixed PoroElasticity problem
@@ -66,47 +63,20 @@ class PoroElasticity : public IntegrandBase
   };
 
 public:
-
   //! \brief The default constructor initializes all pointers to zero.
   //! \param[in] n Number of spatial dimensions
-  PoroElasticity(unsigned short int n, int order = 1);
-
-  //! \brief The destructor frees the dynamically allocated data objects.
+  //! \param[in] order Order of the time-integration scheme
+  PoroElasticity(unsigned short int n = 3, int order = 1);
+  //! \brief Empty destructor.
   virtual ~PoroElasticity() {}
 
-  //! \brief Defines the traction field to use in Neumann boundary conditions
-  void setTraction(TractionFunc* tf) { tracFld = tf; }
-
-  //! \brief Defines the trction field to use in Neumann boundary conditions
-  void setTraction(VecFunc* tf) { fluxFld = tf; }
-
-  //! \brief Evaluates the boundary traction field (if any) at specified point
-  //! \param[in] X Cartesian coordinate of the current integration point
-  //! \param[in] n Outward-directed unit normal vector at current point
-  virtual Vec3 getTraction(const Vec3& X, const Vec3& n) const;
-
-  //! \brief Defines the gravitation vector
-  //! \param[in] grav Gravity vector
-  virtual void setGravity(const Vec3& gravity) { grav = gravity; }
-
-  //! \brief Obtain current gravity vector
-  const Vec3 getGravity() const { return grav; }
-
-  //! \brief Defines the scaling factor
-  //! \param[in] sc Scaling factor
-  virtual void setScaling(double scaling) { sc = scaling; }
-
-  //! \brief Obtain current scaling factor
+  //! \brief Defines the scaling factor.
+  void setScaling(double scaling) { sc = scaling; }
+  //! \brief Obtain current scaling factor.
   double getScaling() const { return sc; }
 
-  //! \brief Defines the material properties.
-  virtual void setMaterial(PoroMaterial* material) { mat = material; }
-
-  //! Evaluates the mass density at current point
-  virtual double getMassDensity(const Vec3&) const;
-
-  //! \brief Evaluates the body force field (if any) at a specified point
-  virtual Vec3 getBodyForce(const Vec3& X) const;
+  //! \brief Returns the current gravity vector.
+  const Vec3 getGravity() const { return gravity; }
 
   using IntegrandBase::getLocalIntegral;
   //! \brief Returns a local integral container for the given element
@@ -237,22 +207,16 @@ private:
   //! \brief Evaluates the secondary solution at a result point
   //! (shared code between mixed and non-mixed)
   //! \param[out] s The solution field values at current point
+  //! \param[in] fe Finite element data at current point
   //! \param[in] X Cartesian coordinates of current point
-  //! \param[in] B The B-matrix (displacement basis derivatives)
   //! \param[in] disp The displacement coefficients
-  bool evalSolCommon(Vector& s, const Vec3 &X, const Matrix& B, const Vector& disp) const;
+  bool evalSolCommon(Vector& s,
+                     const FiniteElement& fe, const Vec3& X,
+                     const Vector& disp) const;
 
 private:
-  Vec3 grav;              //!< Gravitation vector
-  double sc;              //!< Scaling factor
-
-protected:
-  unsigned short int eS;                        //!< Index to element load vector
-  double gacc;                                  //!< Gravitational acceleration
-  TractionFunc* tracFld;                        //!< Pointer to implicit boundary traction field
-  VecFunc* fluxFld;                             //!< Pointer to explicit boundary traction field
-  TimeIntegration::BDF bdf;                     //!< BDF time discretization parameters
-  PoroMaterial* mat;                            //!< Material data
+  double sc;   //!< Scaling factor
+  double gacc; //!< Gravitational acceleration
 };
 
 #endif
