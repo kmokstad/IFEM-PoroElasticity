@@ -12,7 +12,6 @@
 //==============================================================================
 
 #include "IFEM.h"
-#include "SIM1D.h"
 #include "SIM2D.h"
 #include "SIM3D.h"
 #include "SIMPoroElasticity.h"
@@ -72,21 +71,18 @@ int main(int argc, char ** argv)
   IFEM::Init(argc,argv);
 
   for (i = 1; i < argc; i++)
-  {
     if (SIMoptions::ignoreOldOptions(argc,argv,i))
       ; // ignore the obsolete option
     else if (!strcmp(argv[i],"-2D"))
       ndim = 2;
-    else if (!strcmp(argv[i],"-1D"))
-      ndim = 1;
     else if (!strcmp(argv[i],"-mixed")) {
       ASMmxBase::Type = ASMmxBase::FULL_CONT_RAISE_BASIS1;
       mixed = true;
-    } else if (!infile)
+    }
+    else if (!infile)
       infile = argv[i];
     else
       std::cerr << "*** Unknown option ignored: " << argv[i] << std::endl;
-  }
 
   if (!infile)
   {
@@ -94,14 +90,12 @@ int main(int argc, char ** argv)
                << " <inputfile> [-dense|-spr|-superlu[<nt>]|-samg|-petsc]\n      "
                << " [-free] [-lag|-spec|-LR] [-1D|-2D] [-mixed] [-nGauss <n>]"
                << "\n       [-vtf <format> [-nviz <nviz>]"
-               << " [-nu <nu> [-nv <nv>] [-nw <nw>]] [-hdf5]\n"
-               << "       [-eig <iop> [-nev <nev>] [-ncv <ncv>] [-shift <shf>]]\n"
-               << "       [-ignore <p1> <p2> ...] [-fixDup]" << std::endl;
+               << " [-nu <nu> [-nv <nv>] [-nw <nw>]] [-hdf5]"<< std::endl;
     return 0;
   }
 
   IFEM::cout << "\n >>> IFEM Poroelasticity Solver <<<"
-             << "\n ======================================"
+             << "\n =================================="
              << "\n Executing command:\n";
   for (i = 0; i < argc; i++) IFEM::cout << " " << argv[i];
   IFEM::cout << "\n\n Input file: " << infile;
@@ -112,8 +106,6 @@ int main(int argc, char ** argv)
     return runSimulator<SIM3D>(infile, mixed);
   else if (ndim == 2)
     return runSimulator<SIM2D>(infile, mixed);
-  else
-    return runSimulator<SIM1D>(infile, mixed);
 
   return 1;
 }

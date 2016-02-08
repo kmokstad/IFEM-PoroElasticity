@@ -3,7 +3,7 @@ OGSBenchmark1D.xinp -2D -mixed
 	Topology sets: Bottom (1,3,1D)
 	               Top (1,4,1D)
 	               Vertical (1,1,1D) (1,2,1D)
-Porosity, n = 0.5
+Elasticity: 2D, gravity = 0 0
 	Density of Fluid, rhof = 1000
 	Density of Solid, rhos = 2700
 	Bulk Modulus of Water, Kw = 1e+99
@@ -11,7 +11,7 @@ Porosity, n = 0.5
 	Bulk Modulus of Medium, Ko = 0
 	Young's Modulus, E = 30000
 	Poisson's Ratio, nu = 0.2
-	g = 0 0 0
+	Porosity, n = 0.5
 Number of elements    21
 Number of nodes       165
 Number of dofs        261
