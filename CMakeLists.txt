@@ -17,8 +17,7 @@ set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} ${IFEM_CXX_FLAGS}")
 # Generate regtest script with correct paths
 configure_file(${IFEM_REGTEST_SCRIPT} regtest.sh)
 
-include_directories(${IFEM_INCLUDES} ../Common ../Elasticity
-                    ${PROJECT_SOURCE_DIR})
+include_directories(${IFEM_INCLUDES} ../Common ${PROJECT_SOURCE_DIR})
 
 if(NOT TARGET Elasticity)
   add_subdirectory(../Elasticity Elasticity)
@@ -27,6 +26,7 @@ endif()
 set(PoroElasticity_SRCS PoroElasticity.C PoroMaterial.C)
 
 add_library(CommonPoro STATIC ${PoroElasticity_SRCS})
+target_link_libraries(CommonPoro Elasticity)
 
 set(EXECUTABLE_OUTPUT_PATH ${CMAKE_BINARY_DIR}/bin)
 
