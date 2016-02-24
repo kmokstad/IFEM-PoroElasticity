@@ -467,6 +467,11 @@ size_t PoroElasticity::getNoFields (int fld) const
 
 std::string PoroElasticity::getField1Name (size_t i, const char* prefix) const
 {
+  if (i == 11)
+    return "Displacements";
+  if (i == 12)
+    return "Pressure";
+
   if (i >= nsd)
     i = 3;
 
