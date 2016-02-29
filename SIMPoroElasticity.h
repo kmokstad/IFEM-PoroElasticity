@@ -114,6 +114,9 @@ public:
     for (size_t i=0;i<solution.size();++i)
       solution[i].resize(this->getNoDOFs(),true);
 
+    this->registerField("init1", solution[0]);
+    this->registerField("init2", solution[1]);
+
     SIM::setInitialConditions(*this);
     return true;
   }
