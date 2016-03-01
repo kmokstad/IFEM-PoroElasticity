@@ -57,7 +57,7 @@ public:
     for (; child; child = child->NextSiblingElement())
       if (!strcasecmp(child->Value(),"scaling")) {
         double sc = 1.0e14;
-        utl::getAttribute(elem,"value",sc);
+        utl::getAttribute(child,"value",sc);
         static_cast<PoroElasticity*>(Dim::myProblem)->setScaling(sc);
         IFEM::cout <<"\tScaling: sc = "<< sc << std::endl;
       }
