@@ -14,6 +14,21 @@ endif()
 
 set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} ${IFEM_CXX_FLAGS}")
 
+# Generate doxy in build tree
+if(EXISTS ${PROJECT_SOURCE_DIR}/doc/Doxyfile.in)
+  CONFIGURE_FILE(${PROJECT_SOURCE_DIR}/doc/Doxyfile.in Doxyfile @ONLY)
+endif()
+
+if(EXISTS ${PROJECT_BINARY_DIR}/Doxyfile)
+  add_custom_target(PoroElasticity-doc doxygen ${PROJECT_BINARY_DIR}/Doxyfile
+                    WORKING_DIRECTORY ${PROJECT_SOURCE_DIR}
+                    COMMENT "Generating API documentation" VERBATIM)
+  if(NOT TARGET doc)
+    add_custom_target(doc)
+  endif()
+  add_dependencies(doc PoroElasticity-doc)
+endif()
+
 # Generate regtest script with correct paths
 configure_file(${IFEM_REGTEST_SCRIPT} regtest.sh)
 
@@ -35,6 +50,14 @@ target_link_libraries(PoroElasticity CommonPoro Elasticity ${IFEM_LIBRARIES})
 
 # Installation
 install(TARGETS PoroElasticity DESTINATION bin COMPONENT bin)
+
+if(INSTALL_DOXY)
+  install(CODE "EXECUTE_PROCESS(COMMAND ${CMAKE_BUILD_TOOL} doc WORKING_DIRECTORY \"${CMAKE_CURRENT_BINARY_DIR}\")" COMPONENT doc)
+  install(DIRECTORY ${PROJECT_BINARY_DIR}/doc/html DESTINATION ${CMAKE_INSTALL_DOCDIR}/Apps/PoroElasticity
+          COMPONENT doc
+          PATTERN *.md5 EXCLUDE
+          PATTERN *.map EXCLUDE)
+endif(INSTALL_DOXY)
 
 enable_testing()
 include(IFEMTesting)

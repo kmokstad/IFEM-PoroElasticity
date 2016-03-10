@@ -1,0 +1,21 @@
+// $Id$
+//==============================================================================
+//!
+//! \file PoroElasticity.dox
+//!
+//! \date Mar 10 2016
+//!
+//! \author Arne Morten Kvarving / SINTEF
+//!
+//! \brief File containing the Main Page of the IFEM-PoroElasticity documentation.
+//!
+//==============================================================================
+
+/*! \mainpage PoroElasticity
+
+\author Arne Morten Kvarving, Sintef ICT, Trondheim
+
+\section intro Introduction
+
+This is a Poro-Elasticity application built on IFEM.
+*/
