@@ -32,7 +32,7 @@ endif()
 # Generate regtest script with correct paths
 configure_file(${IFEM_REGTEST_SCRIPT} regtest.sh)
 
-include_directories(${IFEM_INCLUDES} ../Common ${PROJECT_SOURCE_DIR})
+include_directories(${IFEM_INCLUDES} ../Common ${PROJECT_SOURCE_DIR} ../Elasticity)
 
 if(NOT TARGET Elasticity)
   add_subdirectory(../Elasticity Elasticity)
