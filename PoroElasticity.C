@@ -446,8 +446,6 @@ bool PoroElasticity::evalBou (LocalIntegral& elmInt,
 
   Vec3 permeability = pmat->getPermeability(X);
 
-  Vec3 bf = this->getBodyforce(X);
-
   double scl(sc);
   if (scl == 0.0)
     scl = sqrt(pmat->getStiffness(X)*pmat->getFluidDensity(X)*gacc/(permeability[0]*time.dt));
@@ -456,17 +454,7 @@ bool PoroElasticity::evalBou (LocalIntegral& elmInt,
   ElmMats& elMat = static_cast<ElmMats&>(elmInt);
   for (size_t i = 1; i <= fe.basis(1).size(); i++)
     for (unsigned short int j = 1; j <= nsd; j++)
-      elMat.b[Fu](nsd*(i-1)+j) += (-1.0)*(dtr[j-1]*fe.basis(1)(i)*fe.detJxW +
-                                  bf[j-1]*fe.basis(1)(i)*fe.detJxW);
-
-  // First term of fp vector in RHS, remember to add water flux term
-  for (size_t i = 1; i <= fe.basis(2).size(); i++)
-  {
-    double fpvec = 0.0;
-    for (size_t k = 1; k <= nsd; k++)
-      fpvec += scl*fe.grad(2)(i,k)*(permeability[k-1]/gacc)*gravity[k-1];
-    elMat.b[Fp](i) = fpvec*time.dt*fe.detJxW;
-  }
+      elMat.b[Fu](nsd*(i-1)+j) += -1.0 * dtr[j-1]*fe.basis(1)(i)*fe.detJxW;
 
   return true;
 }
