@@ -78,6 +78,21 @@ public:
   //! \brief Returns the current gravity vector.
   const Vec3 getGravity() const { return gravity; }
 
+  //! \brief Computes the stiffness matrix for a quadrature point.
+  bool evalStiffnessMatrix(Matrix& mx, const Matrix &B, const Matrix &C, double detJxW) const;
+
+  //! \brief Computes the coupling matrix for a quadrature point.
+  bool evalCouplingMatrix(Matrix &mx, const Matrix &B, const Vector &basis,
+                          double scl, double alpha, const Vector &m, double detJxW) const;
+
+  //! \brief Computes the compressibility matrix for a quadrature point.
+  bool evalCompressibilityMatrix(Matrix &mx, const Vector &basis,
+                                 double scl, double Minv, double detJxW) const;
+
+  //! \brief Computes the permeability matrix for a quadrature point.
+  bool evalPermeabilityMatrix(Matrix &mx, const Matrix &grad, double scl,
+                              const Vec3 &permeability, double acc_dens, double detJxW) const;
+
   using IntegrandBase::getLocalIntegral;
   //! \brief Returns a local integral container for the given element
   //! \param[in] nen1 Number of nodes on element for basis 1

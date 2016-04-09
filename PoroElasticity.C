@@ -284,6 +284,57 @@ bool PoroElasticity::evalIntMx (LocalIntegral& elmInt,
 }
 
 
+bool PoroElasticity::evalStiffnessMatrix(Matrix& mx, const Matrix &B, const Matrix &C, double detJxW) const
+{
+  Matrix CB;
+  CB.multiply(C, B, false, false);
+  CB *= -1.0 * detJxW;
+  mx.multiply(B, CB, true, false, true);
+
+  return true;
+}
+
+
+bool PoroElasticity::evalCouplingMatrix(Matrix &mx, const Matrix &B, const Vector &basis,
+                                        double scl, double alpha, const Vector &m, double detJxW) const
+{
+  const size_t nstrc = nsd * (nsd + 1) / 2;
+  Matrix K(basis.size(), nstrc);
+
+  for (size_t i = 1; i <= basis.size(); i++)
+    for (size_t j = 1; j <= nstrc; j++)
+      K(i,j) += scl * m(j) * alpha * basis(i) * detJxW;
+
+  mx.multiply(B, K, true, true, true);
+
+  return true;
+}
+
+
+bool PoroElasticity::evalCompressibilityMatrix(Matrix &mx, const Vector& basis,
+                                               double scl, double Minv, double detJxW) const
+{
+  Matrix temp(mx.rows(), mx.cols());
+  temp.outer_product(basis, basis);
+  temp *= scl * scl * Minv * detJxW;
+  mx += temp;
+
+  return true;
+}
+
+
+bool PoroElasticity::evalPermeabilityMatrix(Matrix &mx, const Matrix &grad, double scl,
+                                            const Vec3 &permeability, double acc_dens, double detJxW) const
+{
+  for (size_t i = 1; i <= grad.rows(); i++)
+    for (size_t j = 1; j <= grad.rows(); j++)
+      for (size_t k = 1; k <= nsd; k++)
+        mx(i,j) += scl * scl * permeability[k-1] / acc_dens * grad(i,k) * grad(j,k) * detJxW;
+
+  return true;
+}
+
+
 bool PoroElasticity::evalInt (LocalIntegral& elmInt,
                               const FiniteElement& fe,
                               const TimeDomain& time, const Vec3& X) const
@@ -295,8 +346,8 @@ bool PoroElasticity::evalInt (LocalIntegral& elmInt,
     return false;
   }
 
-  size_t i,j,k;
-  Matrix Bmat, Cmat, CB;
+  size_t i,j;
+  Matrix Bmat, Cmat;
   if (!this->formBmatrix(Bmat,fe.dNdX))
     return false;
 
@@ -320,42 +371,29 @@ bool PoroElasticity::evalInt (LocalIntegral& elmInt,
   // Inverse of the compressibility modulus
   double Minv = ((alpha - poro)/Ks) + (poro/Kw);
 
-  // Integration of the stiffness matrix
-  CB.multiply(Cmat,Bmat,false,false);
-  CB *= -1.0 * fe.detJxW;
-  elMat.A[uu].multiply(Bmat,CB,true,false,true);
-
   // Define the unit Voigt vector
   Vector m(Cmat.rows());
   for (i = 1; i <= m.size(); i++)
     if (i <= nsd)
       m(i) = 1.0;
 
-  // Integration of the coupling matrix
-  Matrix Kuptmp;
-  const size_t nstrc = nsd*(nsd+1)/2;
-  Kuptmp.resize(fe.basis(2).size(),nstrc);
+  if (!evalStiffnessMatrix(elMat.A[uu], Bmat, Cmat, fe.detJxW))
+    return false;
 
-  for (i = 1; i <= fe.basis(2).size(); i++)
-    for (j = 1; j <= nstrc; j++)
-      Kuptmp(i,j) += scl*m(j)*alpha*fe.basis(2)(i)*fe.detJxW;
-
-  elMat.A[up].multiply(Bmat,Kuptmp,true,true,true);
+  if (!evalCouplingMatrix(elMat.A[up], Bmat, fe.basis(2), scl, alpha, m, fe.detJxW))
+    return false;
 
   // Integration of the compressibilty matrix
   Matrix Cpp;
-  Cpp.resize(fe.basis(2).size(),fe.basis(2).size());
-  for (i = 1; i <= fe.basis(2).size(); i++)
-    for (j = 1; j <= fe.basis(2).size(); j++)
-      Cpp(i,j) += scl*scl*fe.basis(2)(i)*Minv*fe.basis(2)(j)*fe.detJxW;
+  Cpp.resize(fe.basis(2).size(), fe.basis(2).size());
+  if (!evalCompressibilityMatrix(Cpp, fe.basis(2), scl, Minv, fe.detJxW))
+    return false;
 
   // Integration of the permeability matrix
   Matrix Kpp;
-  Kpp.resize(fe.basis(2).size(),fe.basis(2).size());
-  for (i = 1; i <= fe.basis(2).size(); i++)
-    for (j = 1; j <= fe.basis(2).size(); j++)
-      for (k = 1; k <= nsd; k++)
-        Kpp(i,j) += scl*scl*fe.grad(2)(i,k)*(permeability[k-1]/(pmat->getFluidDensity(X)*gacc))*fe.grad(2)(j,k)*fe.detJxW;
+  Kpp.resize(fe.basis(2).size(), fe.basis(2).size());
+  if (!evalPermeabilityMatrix(Kpp, fe.grad(2), scl, permeability, pmat->getFluidDensity(X) * gacc, fe.detJxW))
+    return false;
 
   elMat.A[pp] += Cpp;
   elMat.A[pp].add(Kpp,time.dt);
