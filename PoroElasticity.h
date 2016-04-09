@@ -40,7 +40,7 @@ class PoroElasticity : public Elasticity
     virtual const Vector& getRHSVector() const;
     //! \brief Makes the actual Newton matrix.
     //! \note Separated for reuse in finalizeElement.
-    void makeNewtonMatrix(Matrix& N, bool dopp) const;
+    void makeNewtonMatrix(Matrix& N, size_t pp_idx) const;
   };
 
   /*!
@@ -59,7 +59,7 @@ class PoroElasticity : public Elasticity
     virtual const Vector& getRHSVector() const;
     //! \brief Makes the actual Newton matrix.
     //! \note Separated for reuse in finalizeElement.
-    void makeNewtonMatrix(Matrix& N, bool dopp) const;
+    void makeNewtonMatrix(Matrix& N, size_t pp_idx) const;
   };
 
 public:
