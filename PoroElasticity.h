@@ -229,6 +229,10 @@ private:
                      const FiniteElement& fe, const Vec3& X,
                      const Vector& disp) const;
 
+  //! \brief Initializes the local integral
+  void initLocalIntegral(ElmMats *result, size_t ndof_displ,
+                         size_t ndof_press, bool neumann) const;
+
 private:
   double sc;   //!< Scaling factor
   double gacc; //!< Gravitational acceleration

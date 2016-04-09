@@ -156,30 +156,34 @@ PoroElasticity::PoroElasticity (unsigned short int n, int order) : Elasticity(n)
 }
 
 
-LocalIntegral* PoroElasticity::getLocalIntegral (const std::vector<size_t>& nen,
-                                                 size_t, bool neumann) const
+void PoroElasticity::initLocalIntegral(ElmMats *result, size_t ndof_displ,
+                                       size_t ndof_press, bool neumann) const
 {
-  const size_t nedof1 = nsd*nen[0];
-  const size_t nedof = nedof1 + nen[1];
-
-  ElmMats* result = new MixedElmMats();
+  size_t ndof_tot = ndof_displ + ndof_press;
 
   result->rhsOnly = neumann;
   result->withLHS = !neumann;
-  result->b[Fres].resize(nedof);
-  result->b[Fprev].resize(nedof);
-  result->b[Fu].resize(nedof1);
-  result->b[Fp].resize(nen[1]);
+  result->b[Fres].resize(ndof_tot);
+  result->b[Fprev].resize(ndof_tot);
+  result->b[Fu].resize(ndof_displ);
+  result->b[Fp].resize( ndof_press);
 
   if (!neumann)
   {
-    result->A[uu].resize(nedof1,nedof1);
-    result->A[up].resize(nedof1,nen[1]);
-    result->A[pp].resize(nen[1],nen[1]);
-    result->A[Ktan].resize(nedof,nedof);
-    result->A[Kprev].resize(nedof,nedof);
+    result->A[uu].resize(ndof_displ, ndof_displ);
+    result->A[up].resize(ndof_displ, ndof_press);
+    result->A[pp].resize( ndof_press, ndof_press);
+    result->A[Ktan].resize(ndof_tot, ndof_tot);
+    result->A[Kprev].resize(ndof_tot, ndof_tot);
   }
+}
 
+
+LocalIntegral* PoroElasticity::getLocalIntegral (const std::vector<size_t>& nen,
+                                                 size_t, bool neumann) const
+{
+  ElmMats* result = new MixedElmMats();
+  initLocalIntegral(result, nsd * nen[0], nen[1], neumann);
   return result;
 }
 
@@ -187,27 +191,8 @@ LocalIntegral* PoroElasticity::getLocalIntegral (const std::vector<size_t>& nen,
 LocalIntegral* PoroElasticity::getLocalIntegral (size_t nen,
                                                  size_t, bool neumann) const
 {
-  const size_t nedof1 = nsd*nen;
-  const size_t nedof = nedof1 + nen;
-
   ElmMats* result = new NonMixedElmMats();
-
-  result->rhsOnly = neumann;
-  result->withLHS = !neumann;
-  result->b[Fres].resize(nedof);
-  result->b[Fprev].resize(nedof);
-  result->b[Fu].resize(nedof1);
-  result->b[Fp].resize(nen);
-
-  if (!neumann)
-  {
-    result->A[uu].resize(nedof1,nedof1);
-    result->A[up].resize(nedof1,nen);
-    result->A[pp].resize(nen,nen);
-    result->A[Ktan].resize(nedof,nedof);
-    result->A[Kprev].resize(nedof,nedof);
-  }
-
+  initLocalIntegral(result, nsd * nen, nen, neumann);
   return result;
 }
 
