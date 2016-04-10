@@ -62,14 +62,19 @@ PoroElasticity::MixedElmMats::MixedElmMats ()
 }
 
 
-void PoroElasticity::MixedElmMats::makeNewtonMatrix(Matrix& N, size_t pp_idx) const
+void PoroElasticity::MixedElmMats::makeNewtonMatrix_P(Matrix& N, size_t pp_idx) const
 {
   size_t n = A[uu].rows();
-
-  N.fillBlock(A[uu], 1, 1);
-  N.fillBlock(A[up], 1, 1+n);
   N.fillBlock(A[up], 1+n, 1, true);
   N.fillBlock(A[pp_idx], 1+n, 1+n);
+}
+
+
+void PoroElasticity::MixedElmMats::makeNewtonMatrix_U(Matrix& N) const
+{
+  size_t n = A[uu].rows();
+  N.fillBlock(A[uu], 1, 1);
+  N.fillBlock(A[up], 1, 1+n);
 }
 
 
@@ -77,7 +82,8 @@ const Matrix& PoroElasticity::MixedElmMats::getNewtonMatrix () const
 {
   Matrix& N = const_cast<Matrix&>(A[Ktan]);
 
-  makeNewtonMatrix(N, pp);
+  makeNewtonMatrix_U(N);
+  makeNewtonMatrix_P(N, pp);
 
   return A[Ktan];
 }
@@ -102,7 +108,8 @@ PoroElasticity::NonMixedElmMats::NonMixedElmMats ()
   this->resize(NMAT,NVEC); // Number of element matrices and vectors
 }
 
-void PoroElasticity::NonMixedElmMats::makeNewtonMatrix(Matrix& N, size_t pp_idx) const
+
+void PoroElasticity::NonMixedElmMats::makeNewtonMatrix_P(Matrix& N, size_t pp_idx) const
 {
   size_t n = A[pp].rows();
   size_t nsd = A[uu].rows()/A[pp].rows();
@@ -113,8 +120,25 @@ void PoroElasticity::NonMixedElmMats::makeNewtonMatrix(Matrix& N, size_t pp_idx)
       // PP-coupling
       N(nf*i, nf*j) = A[pp_idx](i,j);
       for (size_t l = 1; l <= nsd; ++l) {
+        // PU-coupling
+        N(j*nf, nf*(i-1)+l) = A[up](nsd*(i-1)+l, j);
+      }
+    }
+  }
+}
+
+
+void PoroElasticity::NonMixedElmMats::makeNewtonMatrix_U(Matrix& N) const
+{
+  size_t n = A[pp].rows();
+  size_t nsd = A[uu].rows()/A[pp].rows();
+  size_t nf = nsd + 1;
+
+  for (size_t i = 1; i <= n; ++i) {
+    for (size_t j = 1; j <= n; ++j) {
+      for (size_t l = 1; l <= nsd; ++l) {
         // UP-coupling
-        N(nf*(i-1)+l, j*nf) = N(j*nf, nf*(i-1)+l) = A[up](nsd*(i-1)+l, j);
+        N(nf*(i-1)+l, j*nf) = A[up](nsd*(i-1)+l, j);
         for (size_t k = 1; k <= nsd; ++k) {
           // UU-coupling
           N(nf*(i-1)+l, (j-1)*nf+k) = A[uu](nsd*(i-1)+l, (j-1)*nsd+k);
@@ -129,7 +153,8 @@ const Matrix& PoroElasticity::NonMixedElmMats::getNewtonMatrix () const
 {
   Matrix& N = const_cast<Matrix&>(A[Ktan]);
 
-  makeNewtonMatrix(N, pp);
+  makeNewtonMatrix_U(N);
+  makeNewtonMatrix_P(N, pp);
 
   return A[Ktan];
 }
@@ -345,7 +370,7 @@ bool PoroElasticity::evalInt (LocalIntegral& elmInt,
 
   double scl(sc);
   if (scl == 0.0)
-    scl = sqrt(pmat->getStiffness(X)*pmat->getFluidDensity(X)*gacc/(permeability[0]*time.dt));
+    scl = sqrt(pmat->getStiffness(X) * pmat->getFluidDensity(X) * gacc / permeability[0] / time.dt);
 
   // Biot's coefficient
   double Ko = pmat->getBulkMedium(X);
@@ -405,23 +430,18 @@ bool PoroElasticity::evalBou (LocalIntegral& elmInt,
   // Evaluate the surface traction
   Vec4 Xt = static_cast<const Vec4&>(X);
   Xt.t = time.t;
-  Vec3 tr2 = this->getTraction(Xt,normal);
-  Xt.t -= time.dt;
-  Vec3 tr1 = this->getTraction(Xt,normal);
-  Vec3 dtr;
-  dtr = tr2 - tr1;
-
+  Vec3 trac = this->getTraction(Xt, normal);
   Vec3 permeability = pmat->getPermeability(X);
 
   double scl(sc);
   if (scl == 0.0)
-    scl = sqrt(pmat->getStiffness(X)*pmat->getFluidDensity(X)*gacc/(permeability[0]*time.dt));
+    scl = sqrt(pmat->getStiffness(X) * pmat->getFluidDensity(X) * gacc / permeability[0] / time.dt);
 
   // Integrate the force vector fu
   ElmMats& elMat = static_cast<ElmMats&>(elmInt);
   for (size_t i = 1; i <= fe.basis(1).size(); i++)
     for (unsigned short int j = 1; j <= nsd; j++)
-      elMat.b[Fu](nsd*(i-1)+j) += -1.0 * dtr[j-1]*fe.basis(1)(i)*fe.detJxW;
+      elMat.b[Fu](nsd*(i-1)+j) += -1.0 * trac[j-1] * fe.basis(1)(i) * fe.detJxW;
 
   return true;
 }
@@ -438,12 +458,12 @@ bool PoroElasticity::finalizeElement (LocalIntegral& elmInt, const TimeDomain& t
 
   MixedElmMats* mMat = dynamic_cast<MixedElmMats*>(&elmInt);
   if (mMat) {
-    mMat->makeNewtonMatrix(elMat.A[Kprev], pp_S);
+    mMat->makeNewtonMatrix_P(elMat.A[Kprev], pp_S);
     prevSol = elmInt.vec[U];
     prevSol.insert(prevSol.end(), elmInt.vec[P].begin(), elmInt.vec[P].end());
   } else {
     NonMixedElmMats* mMat = dynamic_cast<NonMixedElmMats*>(&elmInt);
-    mMat->makeNewtonMatrix(elMat.A[Kprev], pp_S);
+    mMat->makeNewtonMatrix_P(elMat.A[Kprev], pp_S);
     utl::interleave(elmInt.vec[U], elmInt.vec[P], prevSol, nsd, 1);
   }
 

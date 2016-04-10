@@ -38,9 +38,12 @@ class PoroElasticity : public Elasticity
     virtual const Matrix& getNewtonMatrix() const;
     //! \brief Returns the element level RHS vector
     virtual const Vector& getRHSVector() const;
-    //! \brief Makes the actual Newton matrix.
+    //! \brief Fills in the force balance part in the Newton matrix.
     //! \note Separated for reuse in finalizeElement.
-    void makeNewtonMatrix(Matrix& N, size_t pp_idx) const;
+    void makeNewtonMatrix_U(Matrix &N) const;
+    //! \brief Fills in the mass balance part in the Newton matrix.
+    //! \note Separated for reuse in finalizeElement.
+    void makeNewtonMatrix_P(Matrix& N, size_t pp_idx) const;
   };
 
   /*!
@@ -57,9 +60,12 @@ class PoroElasticity : public Elasticity
     virtual const Matrix& getNewtonMatrix() const;
     //! \brief Returns the element level RHS vector
     virtual const Vector& getRHSVector() const;
-    //! \brief Makes the actual Newton matrix.
+    //! \brief Fills in the force balance part in the Newton matrix.
     //! \note Separated for reuse in finalizeElement.
-    void makeNewtonMatrix(Matrix& N, size_t pp_idx) const;
+    void makeNewtonMatrix_U(Matrix &N) const;
+    //! \brief Fills in the mass balance part in the Newton matrix.
+    //! \note Separated for reuse in finalizeElement.
+    void makeNewtonMatrix_P(Matrix& N, size_t pp_idx) const;
   };
 
 public:
