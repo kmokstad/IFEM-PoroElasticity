@@ -38,9 +38,12 @@ class PoroElasticity : public Elasticity
     virtual const Matrix& getNewtonMatrix() const;
     //! \brief Returns the element level RHS vector
     virtual const Vector& getRHSVector() const;
-    //! \brief Makes the actual Newton matrix.
+    //! \brief Fills in the force balance part in the Newton matrix.
     //! \note Separated for reuse in finalizeElement.
-    void makeNewtonMatrix(Matrix& N, bool dopp) const;
+    void makeNewtonMatrix_U(Matrix &N) const;
+    //! \brief Fills in the mass balance part in the Newton matrix.
+    //! \note Separated for reuse in finalizeElement.
+    void makeNewtonMatrix_P(Matrix& N, size_t pp_idx) const;
   };
 
   /*!
@@ -57,9 +60,12 @@ class PoroElasticity : public Elasticity
     virtual const Matrix& getNewtonMatrix() const;
     //! \brief Returns the element level RHS vector
     virtual const Vector& getRHSVector() const;
-    //! \brief Makes the actual Newton matrix.
+    //! \brief Fills in the force balance part in the Newton matrix.
     //! \note Separated for reuse in finalizeElement.
-    void makeNewtonMatrix(Matrix& N, bool dopp) const;
+    void makeNewtonMatrix_U(Matrix &N) const;
+    //! \brief Fills in the mass balance part in the Newton matrix.
+    //! \note Separated for reuse in finalizeElement.
+    void makeNewtonMatrix_P(Matrix& N, size_t pp_idx) const;
   };
 
 public:
@@ -77,6 +83,21 @@ public:
 
   //! \brief Returns the current gravity vector.
   const Vec3 getGravity() const { return gravity; }
+
+  //! \brief Computes the stiffness matrix for a quadrature point.
+  bool evalStiffnessMatrix(Matrix& mx, const Matrix &B, const Matrix &C, double detJxW) const;
+
+  //! \brief Computes the coupling matrix for a quadrature point.
+  bool evalCouplingMatrix(Matrix &mx, const Matrix &B, const Vector &basis,
+                          double scl, double alpha, const Vector &m, double detJxW) const;
+
+  //! \brief Computes the compressibility matrix for a quadrature point.
+  bool evalCompressibilityMatrix(Matrix &mx, const Vector &basis,
+                                 double scl, double Minv, double detJxW) const;
+
+  //! \brief Computes the permeability matrix for a quadrature point.
+  bool evalPermeabilityMatrix(Matrix &mx, const Matrix &grad, double scl,
+                              const Vec3 &permeability, double acc_dens, double detJxW) const;
 
   using IntegrandBase::getLocalIntegral;
   //! \brief Returns a local integral container for the given element
@@ -213,6 +234,10 @@ private:
   bool evalSolCommon(Vector& s,
                      const FiniteElement& fe, const Vec3& X,
                      const Vector& disp) const;
+
+  //! \brief Initializes the local integral
+  void initLocalIntegral(ElmMats *result, size_t ndof_displ,
+                         size_t ndof_press, bool neumann) const;
 
 private:
   double sc;   //!< Scaling factor

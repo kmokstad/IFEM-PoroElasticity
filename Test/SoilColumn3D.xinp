@@ -34,7 +34,9 @@
     <dirichlet set="Back" basis="1" comp="13"/>
     <dirichlet set="Bottom" basis="1" comp="123"/>
     <dirichlet set="Top" basis="2" comp="1"/>
-    <neumann set="Top" basis="1" direction="0" type="expression">if(below(t,12.2),-1000000000.0*t/12.2,-1000000000.0)</neumann>
+    <neumann set="Top" basis="1" direction="0" type="expression">
+      -1000000000.0
+    </neumann>
   </boundaryconditions>
 
   <!-- Problem-specific block !-->
