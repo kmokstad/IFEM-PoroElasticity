@@ -60,6 +60,7 @@ void PoroElasticity::setMode (SIM::SolutionMode mode)
 {
   this->Elasticity::setMode(mode);
   eS = Fu + 1; // Elasticity::evalBou stores traction force vectors here
+  iS = mode == SIM::DYNAMIC ? 1 : 0; // Flag calculation of internal forces
 }
 
 
@@ -175,16 +176,25 @@ bool PoroElasticity::evalElasticityMatrices (ElmMats& elMat, const Matrix& B,
                                              const FiniteElement& fe,
                                              const Vec3& X) const
 {
-  Matrix C;
-  SymmTensor eps(nsd), sigma(nsd); double U = 0.0;
-  if (!material->evaluate(C,sigma,U,fe,X,eps,eps,0))
+  SymmTensor eps(nsd), sigma(nsd);
+  if (!B.multiply(elMat.vec[Vu],eps))
     return false;
 
+  Matrix C; double U = 0.0;
+  if (!material->evaluate(C,sigma,U,fe,X,eps,eps,iS))
+    return false;
+
+  // Integrate the (material) stiffness
   Matrix CB;
   CB.multiply(C,B).multiply(fe.detJxW); // CB = dSdE*B*|J|*w
-  elMat.A[uu_K].multiply(B,CB,true,false,true); // EK += B^T * CB
+  elMat.A[uu_K].multiply(B,CB,true,false,true); // K_uu += B^T * CB
 
-  return true;
+  // Integrate the internal forces, if deformed configuration
+  if (iS == 0 || eps.isZero(1.0e-16))
+    return true;
+
+  sigma *= fe.detJxW;
+  return B.multiply(sigma,elMat.b[Fu],true,-1); // F_u -= B^T*sigma
 }
 
 

@@ -78,7 +78,7 @@ class PoroElasticity : public Elasticity
     //! \param[in] neumann Whether or not we are assembling Neumann BCs
     Mats(size_t ndof_displ, size_t ndof_press, bool neumann);
     //! \brief Empty destructor
-    ~Mats() {}
+    virtual ~Mats() {}
     //! \brief Updates the time step size
     //! \param[in] dt New time step size
     void setStepSize(double dt) { h = dt; }
@@ -174,8 +174,6 @@ class PoroElasticity : public Elasticity
     virtual const Vector& getRHSVector() const
     {
       Vector tu(P::b[Fu]), tp(P::b[Fp]);
-      if (P::A.size() > uu_K && P::vec.size() > Vu)
-        P::A[uu_K].multiply(P::vec[Vu],    tu, false,-1);
       if (P::A.size() > up   && P::vec.size() > Vp)
         P::A[up]  .multiply(P::vec[Vp],    tu, false, 1);
       if (P::A.size() > pp_P && P::vec.size() > Vp)
