@@ -411,3 +411,10 @@ bool PoroElasticity::evalSolCommon (Vector& s,
 
   return true;
 }
+
+
+NormBase* PoroElasticity::getNormIntegrand (AnaSol*) const
+{
+  // Not implemented yet
+  return nullptr;
+}
