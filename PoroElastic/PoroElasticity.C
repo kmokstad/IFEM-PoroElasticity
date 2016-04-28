@@ -99,8 +99,9 @@ bool PoroElasticity::initElement (const std::vector<int>& MNPC,
   std::vector<int> MNPCu(MNPC.begin(),pStart);
   std::vector<int> MNPCp(pStart,MNPC.end());
 
-  if (elmInt.vec.size() < NSOL)
-    elmInt.vec.resize(NSOL);
+  size_t nsol = m_mode == SIM::DYNAMIC ? NSOL : 2;
+  if (elmInt.vec.size() < nsol)
+    elmInt.vec.resize(nsol);
 
   // Extract the element level solution vectors
   int ierr = utl::gather(MNPCu, nsd, primsol.front(), elmInt.vec[Vu]);
@@ -132,8 +133,9 @@ bool PoroElasticity::initElement (const std::vector<int>& MNPC,
   if (primsol.empty() || primsol.front().empty())
     return true;
 
-  if (elmInt.vec.size() < NSOL)
-    elmInt.vec.resize(NSOL);
+  size_t nsol = m_mode == SIM::DYNAMIC ? NSOL : 2;
+  if (elmInt.vec.size() < nsol)
+    elmInt.vec.resize(nsol);
 
   Matrix temp(nsd+1, MNPC.size());
 
@@ -142,16 +144,17 @@ bool PoroElasticity::initElement (const std::vector<int>& MNPC,
   elmInt.vec[Vp] = temp.getRow(nsd+1);
   elmInt.vec[Vu] = temp.expandRows(-1);
 
-  if (m_mode == SIM::DYNAMIC) {
+  size_t ip = primsol.size();
+  if (m_mode == SIM::DYNAMIC && ip > 2) {
+    // Extract the element level acceleration vector
+    temp.resize(nsd+1, MNPC.size());
+    ierr += utl::gather(MNPC, nsd+1, primsol[--ip], temp);
+    elmInt.vec[Vuacc] = temp.expandRows(-1);
     // Extract the element level velocity vectors
     temp.resize(nsd+1, MNPC.size());
-    ierr += utl::gather(MNPC, nsd+1, primsol[1], temp);
+    ierr += utl::gather(MNPC, nsd+1, primsol[--ip], temp);
     elmInt.vec[Vpvel] = temp.getRow(nsd+1);
     elmInt.vec[Vuvel] = temp.expandRows(-1);
-    // Extract the element level acceleration vector for displacement
-    temp.resize(nsd+1, MNPC.size());
-    ierr += utl::gather(MNPC, nsd+1, primsol[2], temp);
-    elmInt.vec[Vuacc] = temp.expandRows(-1);
   }
 
   if (ierr == 0)
