@@ -64,6 +64,20 @@ void PoroElasticity::setMode (SIM::SolutionMode mode)
 }
 
 
+double PoroElasticity::getScaling (const Vec3& X, double dt) const
+{
+  if (sc != 0.0 || dt == 0.0)
+    return sc;
+
+  const PoroMaterial* pmat = dynamic_cast<const PoroMaterial*>(material);
+  if (!pmat) return sc;
+
+  double rhog = pmat->getFluidDensity(X) * gacc;
+  Vec3 permeability = pmat->getPermeability(X);
+  return sqrt(pmat->getStiffness(X) * rhog / permeability.x / dt);
+}
+
+
 LocalIntegral* PoroElasticity::getLocalIntegral (const std::vector<size_t>& nen,
                                                  size_t, bool neumann) const
 {
@@ -271,9 +285,7 @@ bool PoroElasticity::evalInt (LocalIntegral& elmInt,
   Vec3 permeability = pmat->getPermeability(X);
 
   double rhog = pmat->getFluidDensity(X) * gacc;
-  double scl = sc;
-  if (scl == 0.0)
-    scl = sqrt(pmat->getStiffness(X)*rhog/(permeability.x*time.dt));
+  double scl = this->getScaling(X,time.dt);
 
   // Biot's coefficient
   double Ko = pmat->getBulkMedium(X);

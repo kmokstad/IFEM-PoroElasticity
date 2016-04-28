@@ -216,8 +216,9 @@ public:
   //! \param[in] mode The solution mode to use
   virtual void setMode(SIM::SolutionMode mode);
 
-  //! \brief Returns current scaling factor (for unit testing).
-  double getScaling() const { return sc; }
+  //! \brief Returns the scaling factor at given location.
+  double getScaling(const Vec3& X, double dt = 0.0) const;
+
   //! \brief Returns the current gravity vector (for unit testing).
   const Vec3 getGravity() const { return gravity; }
 
