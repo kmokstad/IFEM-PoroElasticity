@@ -82,6 +82,8 @@ protected:
     virtual ~Mats() {}
     //! \brief Updates the time step size.
     void setStepSize(double dt) { h = dt; }
+    //! \brief Updates the perpendicular crack stretch.
+    void setCrackStretch(double cs) { lambda = cs; }
     //! \brief Returns the element level Newton matrix.
     virtual const Matrix& getNewtonMatrix() const;
     //! \brief Returns the element level right-hand-side vector.
@@ -97,7 +99,8 @@ protected:
     //! \brief Forms a system vector out of two sub-vectors
     virtual void form_vector(const Vector &u, const Vector &p, Vector& target) const = 0;
   protected:
-    double h;
+    double h;      //!< Current time step size
+    double lambda; //!< Perpendicular crack stretch at current location
   };
 
 private:
