@@ -18,74 +18,71 @@
 #include "ElmMats.h"
 
 
-//! \brief Enum for element level solution vectors
-enum SolutionVectors
-{
-  Vu = 0,                        // Displacement
-  Vp = 1,                        // Pore pressure
-
-  // Newmark integration stuff
-  Vuvel = 2,                    // Displacement velocity
-  Vpvel = 3,                    // Pressure velocity
-  Vuacc = 4,                    // Displacement acceleration
-
-  NSOL = 5
-};
-
-
-//! \brief Enum for element level right-hand-side vectors
-enum ResidualVectors
-{
-  Fsys = 0,                     // Final RHS vector
-
-  // Sub-vectors, sized according to the bases in question
-  Fu = 1,                       // Traction and body forces
-  Fp = 2,                       // Flux and body forces
-
-  NVEC = 3
-};
-
-
-//! \brief Enum for element level left-hand-side matrices
-enum TangentMatrices
-{
-  sys = 0,                      // Final Newton matrix
-
-  // Sub-matrices, sized according to the bases in question
-  uu_K = 1,                     // Stiffness matrix
-  uu_M = 2,                     // Mass matrix
-  up_Q = 3,                     // Coupling matrix
-  up_D = 4,                     // Dynamic coupling matrix
-  pp_S = 5,                     // Compressibility matrix
-  pp_P = 6,                     // Permeability matrix
-
-  NMAT = 7
-};
-
-
 /*!
   \brief Class representing the integrand of the PoroElasticity problem.
 */
 
 class PoroElasticity : public Elasticity
 {
+  //! \brief Enum for element-level solution vectors.
+  enum SolutionVectors
+  {
+    Vu = 0,    // Displacement
+    Vp = 1,    // Pore pressure
+
+    // Newmark integration stuff
+    Vuvel = 2, // Velocity
+    Vpvel = 3, // Pore pressure rate
+    Vuacc = 4, // Acceleration
+
+    NSOL = 5
+  };
+
+  //! \brief Enum for element-level right-hand-side vectors.
+  enum ResidualVectors
+  {
+    Fsys = 0,  // Final RHS vector
+
+    // Sub-vectors, sized according to the bases in question
+    Fu = 1,    // Internal elastic forces, external traction and body forces
+    Fp = 2,    // Pressure flux and body forces
+
+    NVEC = 3
+  };
+
+  //! \brief Enum for element-level left-hand-side matrices.
+  enum TangentMatrices
+  {
+    Nsys = 0,  // Final Newton matrix
+
+    // Sub-matrices, sized according to the bases in question
+    uu_K = 1,  // Stiffness matrix
+    uu_M = 2,  // Mass matrix
+    up_Q = 3,  // Coupling matrix
+    up_D = 4,  // Dynamic coupling matrix
+    pp_S = 5,  // Compressibility matrix
+    pp_P = 6,  // Permeability matrix
+
+    NMAT = 7
+  };
+
+protected:
   //! \brief Superclass for the PoroElasticity element matrices.
   class Mats : public ElmMats
   {
   public:
-    //! \brief Default constructor
+    //! \brief Default constructor.
     //! \param[in] ndof_displ Number of dofs in displacement
     //! \param[in] ndof_press Number of dofs in pressure
     //! \param[in] neumann Whether or not we are assembling Neumann BCs
     Mats(size_t ndof_displ, size_t ndof_press, bool neumann);
-    //! \brief Empty destructor
+    //! \brief Empty destructor.
     virtual ~Mats() {}
-    //! \brief Updates the time step size
-    //! \param[in] dt New time step size
+    //! \brief Updates the time step size.
     void setStepSize(double dt) { h = dt; }
-    //! \brief Returns the element level Newton matrix
+    //! \brief Returns the element level Newton matrix.
     virtual const Matrix& getNewtonMatrix() const;
-    //! \brief Returns the element level RHS vector
+    //! \brief Returns the element level right-hand-side vector.
     virtual const Vector& getRHSVector() const;
     //! \brief Adds in a UU-matrix to a system matrix
     virtual void add_uu(const Matrix& source, Matrix& target, double scale = 1.0) const = 0;
@@ -98,13 +95,11 @@ class PoroElasticity : public Elasticity
     //! \brief Forms a system vector out of two sub-vectors
     virtual void form_vector(const Vector &u, const Vector &p, Vector& target) const = 0;
   protected:
-    size_t ndof_displ, ndof_press, nsd;
     double h;
   };
 
-  /*!
-   * \brief Class representing an element matrix for the mixed PoroElasticity problem
-   */
+private:
+  //! \brief Class representing the element matrices for mixed formulation.
   class MixedElmMats : public Mats
   {
   public:
@@ -125,9 +120,7 @@ class PoroElasticity : public Elasticity
     virtual void form_vector(const Vector &u, const Vector &p, Vector& target) const;
   };
 
-  /*!
-   * \brief Class representing an element matrix for the non-mixed PoroElasticity problem
-   */
+  //! \brief Class representing the element matrices for standard formulation.
   class NonMixedElmMats : public Mats
   {
   public:
@@ -148,9 +141,7 @@ class PoroElasticity : public Elasticity
     virtual void form_vector(const Vector &u, const Vector &p, Vector& target) const;
   };
 
-  /*!
-   * \brief Newmark element matrices for PoroElasticity
-   */
+  //! \brief Class representing the element matrices for dynamic problems.
   template<class P> class NewmarkMats : public P
   {
   public:
@@ -192,9 +183,9 @@ class PoroElasticity : public Elasticity
       return P::b.front();
     }
   protected:
-    double beta, gamma;
+    double beta;  //!< Time integration parameter
+    double gamma; //!< Time integration parameter
   };
-
 
 public:
   //! \brief Default constructor.
@@ -293,7 +284,7 @@ public:
   //! \param[in] X Cartesian coordinates of current point
   //! \param[in] MNPC Nodal point correspondance for the basis function values
   virtual bool evalSol(Vector& s, const FiniteElement& fe, const Vec3& X,
-		       const std::vector<int>& MNPC) const;
+                       const std::vector<int>& MNPC) const;
   //! \brief Evaluates the secondary solution at a result point (mixed problem).
   //! \param[out] s The solution field values at current point
   //! \param[in] fe Mixed finite element data at current point
