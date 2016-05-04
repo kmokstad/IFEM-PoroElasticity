@@ -380,12 +380,12 @@ private:
   bool evalCompressibilityMatrix(Matrix& mx, const Vector& N, double scl) const;
 
   //! \brief Computes the permeability matrix for a quadrature point.
-  bool evalPermeabilityMatrix(Matrix& mx, const Matrix& dNdX,
-                              const Vec3& permeability, double scl) const;
+  void evalPermeabilityMatrix(Matrix& mx, const Matrix& dNdX,
+                              const SymmTensor& K, double scl) const;
 
   //! \brief Computes the dynamic coupling matrix for a quadrature point.
-  bool evalDynamicCouplingMatrix(Matrix& mx, const Vector& Nu, const Matrix& dNpdx,
-                                 const Vec3& permeability, double scl) const;
+  void evalDynCouplingMatrix(Matrix& mx, const Vector& Nu, const Matrix& dNpdx,
+                             const SymmTensor& K, double scl) const;
 
 protected:
   //! \brief Computes the elasticity matrices for a quadrature point.
@@ -394,6 +394,16 @@ protected:
   //! \param[in] fe Finite element data of current integration point
   //! \param[in] X Cartesian coordinates of current integration point
   virtual bool evalElasticityMatrices(ElmMats& elMat, const Matrix& B,
+                                      const FiniteElement& fe,
+                                      const Vec3& X) const;
+
+  //! \brief Evaluates the permeability tensor at a quadrature point.
+  //! \param[out] K The permeability tensor
+  //! \param[in] eV Element solution vectors
+  //! \param[in] fe Finite element data of current integration point
+  //! \param[in] X Cartesian coordinates of current integration point
+  virtual bool formPermeabilityTensor(SymmTensor& Kperm,
+                                      const Vectors& eV,
                                       const FiniteElement& fe,
                                       const Vec3& X) const;
 
