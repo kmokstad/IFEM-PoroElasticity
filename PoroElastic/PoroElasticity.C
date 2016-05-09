@@ -388,7 +388,8 @@ std::string PoroElasticity::getField2Name (size_t i, const char* prefix) const
 
 bool PoroElasticity::evalSol (Vector& s, const MxFiniteElement& fe,
                               const Vec3& X, const std::vector<int>& MNPC,
-                              const std::vector<size_t>& elem_sizes) const
+                              const std::vector<size_t>& elem_sizes,
+                              const std::vector<size_t>&) const
 {
   Vector eV;
   std::vector<int>::const_iterator fstart = MNPC.begin() + elem_sizes.front();
