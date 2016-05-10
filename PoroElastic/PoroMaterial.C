@@ -54,17 +54,11 @@ static bool propertyParse(PoroMaterial::FuncConstPair<T>& data,
                           const TiXmlElement* elem,
                           const char* attr, const char* tag)
 {
-  std::string constant;
-  if (utl::getAttribute(elem,attr,constant)) {
-    std::stringstream str;
-    str << constant;
-    str >> data.constant;
+  if (utl::getAttribute(elem,attr,data.constant))
     return true;
-  }
 
   const TiXmlElement* child = elem->FirstChildElement(tag);
-  if (!child) return false;
-  const TiXmlNode* aval = child->FirstChild();
+  const TiXmlNode* aval = child ? child->FirstChild() : nullptr;
   if (!aval) return false;
 
   IFEM::cout <<" ";
@@ -76,10 +70,13 @@ static bool propertyParse(PoroMaterial::FuncConstPair<T>& data,
 }
 
 
-void PoroMaterial::parse(const TiXmlElement* elem)
+void PoroMaterial::parse (const TiXmlElement* elem)
 {
   propertyParse(Emod, elem, "E", "stiffness");
   propertyParse(nu, elem, "nu", "poisson");
+  if (utl::getAttribute(elem, "mu", Emod.constant))
+    Emod.constant *= 2.0 + 2.0*nu.constant;
+
   propertyParse(rhof, elem, "rhof", "fluiddensity");
   propertyParse(rhos, elem, "rhos", "soliddensity");
 
@@ -92,22 +89,30 @@ void PoroMaterial::parse(const TiXmlElement* elem)
   propertyParse(bulkw, elem, "Kw", "waterbulk");
   propertyParse(bulks, elem, "Ks", "solidbulk");
   propertyParse(bulkm, elem, "Ko", "mediumbulk");
+
+  utl::getAttribute(elem, "alpha", alpha);
+  utl::getAttribute(elem, "Minv", Minv);
 }
 
 
-void PoroMaterial::printLog() const
+void PoroMaterial::printLog () const
 {
-  IFEM::cout <<"\tConstitutive Properties: "
+  IFEM::cout <<"\tConstitutive Properties:"
              <<"\n\t\tYoung's Modulus, E = "<< Emod.constant
              <<"\n\t\tPoisson's Ratio, nu = "<< nu.constant;
-  IFEM::cout <<"\n\tDensities: "
+  IFEM::cout <<"\n\tDensities:"
              <<"\n\t\tDensity of Fluid, rhof = "<< rhof.constant
              <<"\n\t\tDensity of Solid, rhos = "<< rhos.constant;
-  IFEM::cout <<"\n\tBulk Moduli: "
-             <<"\n\t\tBulk Modulus of Water, Kw = "<< bulkw.constant
-             <<"\n\t\tBulk Modulus of Solid, Ks = "<< bulks.constant
-             <<"\n\t\tBulk Modulus of Medium, Ko = "<< bulkm.constant;
-  IFEM::cout <<"\n\tPorosity, n = "<< porosity.constant << std::endl;
+  IFEM::cout <<"\n\tBulk Moduli:";
+  if (alpha >= 0.0 && Minv >= 0.0)
+    IFEM::cout <<"\n\t\tBiot's coefficient, alpha = "<< alpha
+               <<"\n\t\tBiot's inverse modulus, M^-1 = "<< Minv;
+  else
+    IFEM::cout <<"\n\t\tBulk Modulus of Water, Kw = "<< bulkw.constant
+               <<"\n\t\tBulk Modulus of Solid, Ks = "<< bulks.constant
+               <<"\n\t\tBulk Modulus of Medium, Ko = "<< bulkm.constant;
+  IFEM::cout <<"\n\tPorosity, n = "<< porosity.constant
+             <<"\n\tPermeability, K = "<< permeability.constant << std::endl;
 }
 
 
@@ -178,6 +183,24 @@ double PoroMaterial::getBulkMedium(const Vec3& X) const
 }
 
 
+double PoroMaterial::getBiotCoeff (const Vec3& X) const
+{
+  if (alpha >= 0.0 && alpha <= 1.0)
+    return alpha;
+
+  return 1.0 - bulkm.evaluate(X)/bulks.evaluate(X);
+}
+
+
+double PoroMaterial::getBiotModulus (const Vec3& X, double al, double po) const
+{
+  if (Minv >= 0.0)
+    return Minv;
+
+  return (al-po)/bulks.evaluate(X) + po/bulkw.evaluate(X);
+}
+
+
 double PoroMaterial::getStiffness(const Vec3& X) const
 {
   return Emod.evaluate(X);
@@ -245,7 +268,7 @@ bool PoroMaterial::evaluate (Matrix& Cmat, SymmTensor& sigma, double& U,
 
 
 bool PoroMaterial::evaluate (double& lambda, double& mu,
-                             const FiniteElement& fe, const Vec3& X) const
+                             const FiniteElement&, const Vec3& X) const
 {
   double E = Emod.evaluate(X);
   double v = nu.evaluate(X);

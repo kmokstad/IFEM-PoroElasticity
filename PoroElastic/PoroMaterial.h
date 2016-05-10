@@ -47,8 +47,8 @@ public:
     }
   };
 
-  //! \brief Empty constructor.
-  PoroMaterial() {}
+  //! \brief The constructor initializes Biot's parameters to -1 (undefined).
+  PoroMaterial() { alpha = Minv = -1.0; }
   //! \brief Empty destructor.
   virtual ~PoroMaterial() {}
 
@@ -80,6 +80,10 @@ public:
   double getBulkSolid(const Vec3& X) const;
   //! \brief Returns bulk modulus of the medium at the current point.
   double getBulkMedium(const Vec3& X) const;
+  //! \brief Returns Biot's coefficient at the current point.
+  double getBiotCoeff(const Vec3& X) const;
+  //! \brief Returns the inverse Biot's modulus at the current point.
+  double getBiotModulus(const Vec3& X, double al, double po) const;
   //! \brief Returns stiffness at the current point.
   virtual double getStiffness(const Vec3& X) const;
   //! \brief Returns Poisson's ratio at the current point.
@@ -104,10 +108,9 @@ public:
   //! \brief Evaluates the Lame-parameters at an integration point.
   //! \param[out] lambda Lame's first parameter
   //! \param[out] mu Lame's second parameter (shear modulus)
-  //! \param[in] fe Finite element quantities at current point
   //! \param[in] X Cartesian coordinates of current point
   virtual bool evaluate(double& lambda, double& mu,
-                        const FiniteElement& fe, const Vec3& X) const;
+                        const FiniteElement&, const Vec3& X) const;
 
 protected:
   FuncConstPair<RealFunc> Emod; //!< Young's modulus
@@ -124,6 +127,9 @@ protected:
   FuncConstPair<RealFunc> bulkw;        //!< Bulk modulus of water
   FuncConstPair<RealFunc> bulks;        //!< Bulk modulus of solid
   FuncConstPair<RealFunc> bulkm;        //!< Bulk modulus of medium
+
+  double alpha; //!< Biot's coefficient
+  double Minv;  //!< Inverse Biot's modulus (compressibility modulus)
 };
 
 #endif

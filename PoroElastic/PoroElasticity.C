@@ -271,7 +271,6 @@ bool PoroElasticity::evalInt (LocalIntegral& elmInt,
                               const FiniteElement& fe,
                               const TimeDomain& time, const Vec3& X) const
 {
-  ElmMats& elMat = static_cast<ElmMats&>(elmInt);
   const PoroMaterial* pmat = dynamic_cast<const PoroMaterial*>(material);
   if (!pmat) {
     std::cerr << __FUNCTION__ << ": No material data." << std::endl;
@@ -282,20 +281,18 @@ bool PoroElasticity::evalInt (LocalIntegral& elmInt,
   if (!this->formBmatrix(Bmat,fe.dNdX))
     return false;
 
+  // Evaluate the permeability
   Vec3 permeability = pmat->getPermeability(X);
 
-  double rhog = pmat->getFluidDensity(X) * gacc;
-  double scl = this->getScaling(X,time.dt);
+  // Evaluate other material parameters
+  double rhog  = pmat->getFluidDensity(X)*gacc;
+  double poro  = pmat->getPorosity(X);
+  double alpha = pmat->getBiotCoeff(X);
+  double Minv  = pmat->getBiotModulus(X,alpha,poro);
+  double scl   = this->getScaling(X,time.dt);
 
-  // Biot's coefficient
-  double Ko = pmat->getBulkMedium(X);
-  double Ks = pmat->getBulkSolid(X);
-  double Kw = pmat->getBulkWater(X);
-  double poro = pmat->getPorosity(X);
-
-  double alpha = 1.0 - (Ko/Ks);
-  // Inverse of the compressibility modulus
-  double Minv = ((alpha - poro)/Ks) + (poro/Kw);
+  // Integrate the element matrices, depending on solution mode
+  ElmMats& elMat = static_cast<ElmMats&>(elmInt);
 
   if (m_mode == SIM::DYNAMIC) {
     this->formMassMatrix(elMat.A[uu_M], fe.basis(1), X, fe.detJxW);

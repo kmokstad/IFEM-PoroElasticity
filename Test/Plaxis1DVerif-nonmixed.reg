@@ -1,12 +1,12 @@
 Plaxis1DVerif-nonmixed.xinp -2D
 
-	Constitutive Properties: 
+	Constitutive Properties:
 		Young's Modulus, E = 1e+06
 		Poisson's Ratio, nu = 0
-	Densities: 
+	Densities:
 		Density of Fluid, rhof = 1000
 		Density of Solid, rhos = 2700
-	Bulk Moduli: 
+	Bulk Moduli:
 		Bulk Modulus of Water, Kw = 1e+99
 		Bulk Modulus of Solid, Ks = 1e+99
 		Bulk Modulus of Medium, Ko = 0
