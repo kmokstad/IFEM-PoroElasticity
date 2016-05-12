@@ -146,8 +146,10 @@ private:
   {
   public:
     //! \brief The constructor initializes the time integration parameters.
-    NewmarkMats(size_t ndof_d, size_t ndof_p, bool neumann, double b, double c)
-      : P(ndof_d,ndof_p,neumann), beta(fabs(b)), gamma(c) { slvDisp = b < 0.0; }
+    NewmarkMats(size_t ndof_d, size_t ndof_p, bool neumann,
+                double b, double c, double m = 0.0, double s = 0.0)
+      : P(ndof_d,ndof_p,neumann), beta(fabs(b)), gamma(c), m_damp(m), s_damp(s)
+    { slvDisp = b < 0.0; }
     //! \brief Empty destructor.
     virtual ~NewmarkMats() {}
     //! \brief Returns the element-level Newton matrix.
@@ -156,8 +158,8 @@ private:
       Matrix& res = const_cast<Matrix&>(P::A.front()); res.fill(0.0);
       double betah2 = beta * P::h * P::h;
       double gammah = gamma * P::h;
-      this->add_uu(P::A[uu_M], res, 1.0);
-      this->add_uu(P::A[uu_K], res, betah2);
+      this->add_uu(P::A[uu_M], res, 1.0    + gammah * m_damp);
+      this->add_uu(P::A[uu_K], res, betah2 + gammah * s_damp);
       this->add_up(P::A[up_Q], res,-betah2);
       this->add_pu(P::A[up_Q], res, gammah);
       this->add_pu(P::A[up_D], res,-1.0);
@@ -192,6 +194,11 @@ private:
         P::A[pp_S].multiply(P::vec[Vpvel], tp, false,-1);
       if (P::A.size() > up_Q && P::vec.size() > Vuvel)
         P::A[up_Q].multiply(P::vec[Vuvel], tp, true, -1);
+      if (P::A.size() > uu_M && P::vec.size() > Vuvel && m_damp > 0.0)
+        P::A[uu_M].multiply(P::vec[Vuvel]*m_damp, tu, false, -1);
+      if (P::A.size() > uu_K && P::vec.size() > Vuvel && s_damp > 0.0)
+        P::A[uu_K].multiply(P::vec[Vuvel]*s_damp, tu, false, -1);
+
       this->form_vector(tu, tp, const_cast<Vector&>(P::b.front()));
 #if INT_DEBUG > 2
       std::cout <<"\nPoroElasticity::NewmarkMats::getRHSVector:";
@@ -210,9 +217,11 @@ private:
       return P::b.front();
     }
   protected:
-    double beta;  //!< Time integration parameter
-    double gamma; //!< Time integration parameter
-    bool slvDisp; //!< If \e true, solve for incremental displacements
+    double beta;   //!< Time integration parameter
+    double gamma;  //!< Time integration parameter
+    double m_damp; //!< Mass-proportional damping
+    double s_damp; //!< Stiffness-proportional damping
+    bool  slvDisp; //!< If \e true, solve for incremental displacements
   };
 
 public:
