@@ -145,25 +145,38 @@ private:
   template<class P> class NewmarkMats : public P
   {
   public:
-    //! \brief Default constructor
+    //! \brief The constructor initializes the time integration parameters.
     NewmarkMats(size_t ndof_d, size_t ndof_p, bool neumann, double b, double c)
-      : P(ndof_d, ndof_p, neumann), beta(b), gamma(c) {}
-    //! \brief Empty destructor
+      : P(ndof_d,ndof_p,neumann), beta(fabs(b)), gamma(c) { slvDisp = b < 0.0; }
+    //! \brief Empty destructor.
     virtual ~NewmarkMats() {}
-    //! \brief Returns the element level Newton matrix
+    //! \brief Returns the element-level Newton matrix.
     virtual const Matrix& getNewtonMatrix() const
     {
       Matrix& res = const_cast<Matrix&>(P::A.front()); res.fill(0.0);
+      double betah2 = beta * P::h * P::h;
+      double gammah = gamma * P::h;
       this->add_uu(P::A[uu_M], res, 1.0);
-      this->add_uu(P::A[uu_K], res, beta * P::h * P::h);
-      this->add_up(P::A[up_Q], res, -beta * P::h * P::h);
-      this->add_pu(P::A[up_Q], res, gamma * P::h);
-      this->add_pu(P::A[up_D], res, -1.0);
-      this->add_pp(P::A[pp_S], res, gamma * P::h);
-      this->add_pp(P::A[pp_P], res, beta * P::h * P::h);
+      this->add_uu(P::A[uu_K], res, betah2);
+      this->add_up(P::A[up_Q], res,-betah2);
+      this->add_pu(P::A[up_Q], res, gammah);
+      this->add_pu(P::A[up_D], res,-1.0);
+      this->add_pp(P::A[pp_S], res, gammah);
+      this->add_pp(P::A[pp_P], res, betah2);
+      if (slvDisp) res.multiply(1.0/betah2);
+#if INT_DEBUG > 2
+      std::cout <<"\nPoroElasticity::NewmarkMats::getNewtonMatrix:"
+                <<"\nElement stiffness matrix, K_uu"<< P::A[uu_K]
+                <<"\nElement mass matrix, M_uu"<< P::A[uu_M]
+                <<"\nElement coupling matrix, Q_up"<< P::A[up_Q]
+                <<"\nElement dynamic coupling matrix, D_up"<< P::A[up_D]
+                <<"\nElement compressibility matrix, S_pp"<< P::A[pp_S]
+                <<"\nElement permeability matrix, P_pp"<< P::A[pp_P]
+                <<"\nElement coefficient matrix"<< P::A[Nsys];
+#endif
       return P::A.front();
     }
-    //! \brief Returns the element level RHS vector
+    //! \brief Returns the element-level right-hand-side vector.
     virtual const Vector& getRHSVector() const
     {
       Vector tu(P::b[Fu]), tp(P::b[Fp]);
@@ -180,11 +193,26 @@ private:
       if (P::A.size() > up_Q && P::vec.size() > Vuvel)
         P::A[up_Q].multiply(P::vec[Vuvel], tp, true, -1);
       this->form_vector(tu, tp, const_cast<Vector&>(P::b.front()));
+#if INT_DEBUG > 2
+      std::cout <<"\nPoroElasticity::NewmarkMats::getRHSVector:";
+      if (P::vec.size() > Vu)
+        std::cout <<"Element displacement, Vu"<< P::vec[Vu];
+      if (P::vec.size() > Vp)
+        std::cout <<"Element pressure, Vp"<< P::vec[Vp];
+      if (P::vec.size() > Vuacc)
+        std::cout <<"Element acceleration, Vuacc"<< P::vec[Vuacc];
+      if (P::vec.size() > Vuvel)
+        std::cout <<"Element velocity, Vuvel"<< P::vec[Vuvel];
+      if (P::vec.size() > Vpvel)
+        std::cout <<"Element pressure rate, Vpvel"<< P::vec[Vpvel];
+      std::cout <<"\nElement right-hand-side vector"<< P::b[Fsys];
+#endif
       return P::b.front();
     }
   protected:
     double beta;  //!< Time integration parameter
     double gamma; //!< Time integration parameter
+    bool slvDisp; //!< If \e true, solve for incremental displacements
   };
 
 public:
