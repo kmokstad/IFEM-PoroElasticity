@@ -86,7 +86,7 @@ void PoroMaterial::parse (const TiXmlElement* elem)
 
   propertyParse(porosity, elem, "poro", "porosity");
   propertyParse(permeability, elem, "perm", "permeability");
-  propertyParse(bulkw, elem, "Kw", "waterbulk");
+  propertyParse(bulkf, elem, "Kf", "fluidbulk");
   propertyParse(bulks, elem, "Ks", "solidbulk");
   propertyParse(bulkm, elem, "Ko", "mediumbulk");
 
@@ -108,7 +108,7 @@ void PoroMaterial::printLog () const
     IFEM::cout <<"\n\t\tBiot's coefficient, alpha = "<< alpha
                <<"\n\t\tBiot's inverse modulus, M^-1 = "<< Minv;
   else
-    IFEM::cout <<"\n\t\tBulk Modulus of Water, Kw = "<< bulkw.constant
+    IFEM::cout <<"\n\t\tBulk Modulus of Fluid, Kf = "<< bulkf.constant
                <<"\n\t\tBulk Modulus of Solid, Ks = "<< bulks.constant
                <<"\n\t\tBulk Modulus of Medium, Ko = "<< bulkm.constant;
   IFEM::cout <<"\n\tPorosity, n = "<< porosity.constant
@@ -165,9 +165,9 @@ double PoroMaterial::getMassDensity(const Vec3& X) const
 }
 
 
-double PoroMaterial::getBulkWater(const Vec3& X) const
+double PoroMaterial::getBulkFluid(const Vec3& X) const
 {
-  return bulkw.evaluate(X);
+  return bulkf.evaluate(X);
 }
 
 
@@ -197,7 +197,7 @@ double PoroMaterial::getBiotModulus (const Vec3& X, double al, double po) const
   if (Minv >= 0.0)
     return Minv;
 
-  return (al-po)/bulks.evaluate(X) + po/bulkw.evaluate(X);
+  return (al-po)/bulks.evaluate(X) + po/bulkf.evaluate(X);
 }
 
 
