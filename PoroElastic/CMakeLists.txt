@@ -8,7 +8,8 @@ set(LIBRARY_OUTPUT_PATH ${CMAKE_BINARY_DIR}/lib)
 
 file(GLOB PoroEl_SOURCES *.C)
 file(GLOB PoroEl_HEADERS *.h)
-add_library(PoroElastic STATIC ${PoroEl_SOURCES})
+
+add_library(PoroElastic STATIC ${PoroEl_SOURCES} ${PROJECT_SOURCE_DIR}/../../Common/SIMNodalConstraint.C)
 
 list(APPEND CHECK_SOURCES ${PoroEl_SOURCES})
 set(CHECK_SOURCES ${CHECK_SOURCES} PARENT_SCOPE)

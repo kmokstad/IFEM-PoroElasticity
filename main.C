@@ -15,9 +15,46 @@
 #include "SIM2D.h"
 #include "SIM3D.h"
 #include "SIMDynPoroElasticity.h"
+#include "SIMThermoPoroElasticity.h"
 #include "SIMSolver.h"
 #include "GenAlphaSIM.h"
 #include "Profiler.h"
+
+
+/*!
+  \brief Creates the thermo-poroelastic simulator and launches the simulation.
+  \param[in] infile The input file to parse
+  \param[in] supg If \e true, use SUPG stabilization
+*/
+
+template<class Dim> int runSimulatorThermalCoupled (char* infile, bool supg)
+{
+  SIMThermoPoroElasticity<Dim> model(supg);
+  SIMSolver<SIMThermoPoroElasticity<Dim>> solver(model);
+
+  // Read input file
+  if(!model.read(infile) || !solver.read(infile))
+    return 1;
+
+  // Configure finite element library
+  if(!model.preprocess())
+    return 2;
+
+  // Setup integration
+  model.setQuadratureRule(model.opt.nGauss[0],true);
+  model.initSystem(model.opt.solver,1,1,false);
+  model.init(solver.getTimePrm());
+  model.setInitialConditions();
+  model.setAssociatedRHS(0,0);
+  model.setMode(SIM::DYNAMIC);
+
+  // HDF5 output
+  if (model.opt.dumpHDF5(infile))
+    solver.handleDataOutput(model.opt.hdf5,model.opt.saveInc,
+                            model.opt.restartInc);
+
+  return solver.solveProblem(infile,"100. Starting the simulation");
+}
 
 
 /*!
@@ -25,7 +62,7 @@
   \param[in] infile The input file to parse
 */
 
-template<class Dim, class Sim> int runSimulator (char* infile)
+template<class Dim, class Sim> int runSimulatorIsoThermal (char* infile)
 {
   utl::profiler->start("Model input");
   IFEM::cout <<"\n\n0. Parsing input file(s)."
@@ -76,16 +113,20 @@ template<class Dim, class Sim> int runSimulator (char* infile)
   \param[in] infile The input file to parse
   \param[in] integrator The time integrator to use (0=linear quasi-static,
              1=linear Newmark, 2=Generalized alpha)
+  \param[in] thermal If true include temperature effects
 */
 
-template<class Dim> int runSimulator (char* infile, char integrator)
+template<class Dim> int runSimulator (char* infile,
+                                      char integrator, bool thermal)
 {
   if (integrator == 2)
-    return runSimulator<Dim, SIMDynPoroElasticity<Dim,GenAlphaSIM> >(infile);
+    return runSimulatorIsoThermal<Dim, SIMDynPoroElasticity<Dim,GenAlphaSIM> >(infile);
   else if (integrator > 0)
-    return runSimulator<Dim, SIMDynPoroElasticity<Dim,NewmarkSIM> >(infile);
-  else // quasi-static
-    return runSimulator<Dim, SIMPoroElasticity<Dim> >(infile);
+    return runSimulatorIsoThermal<Dim, SIMDynPoroElasticity<Dim,NewmarkSIM> >(infile);
+  else if (thermal)
+    return runSimulatorThermalCoupled<Dim>(infile,false);
+  else
+    return runSimulatorIsoThermal<Dim, SIMPoroElasticity<Dim>>(infile);
 }
 
 
@@ -102,6 +143,7 @@ int main (int argc, char** argv)
   char integrator = 0;
   bool twoD = false;
   ASMmxBase::Type = ASMmxBase::NONE;
+  bool thermal = false;
 
   IFEM::Init(argc,argv,"Poroelasticity solver");
 
@@ -112,6 +154,8 @@ int main (int argc, char** argv)
       twoD = SIMElasticity<SIM2D>::planeStrain = true;
     else if (!strcmp(argv[i],"-mixed"))
       ASMmxBase::Type = ASMmxBase::FULL_CONT_RAISE_BASIS1;
+    else if (!strcmp(argv[i],"-thermal"))
+      thermal = true;
     else if (!strcmp(argv[i],"-dyn2"))
       integrator = 2;
     else if (!strncmp(argv[i],"-dyn",4))
@@ -135,7 +179,7 @@ int main (int argc, char** argv)
   IFEM::getOptions().print(IFEM::cout) << std::endl;
 
   if (twoD)
-    return runSimulator<SIM2D>(infile,integrator);
+    return runSimulator<SIM2D>(infile,integrator,thermal);
   else
-    return runSimulator<SIM3D>(infile,integrator);
+    return runSimulator<SIM3D>(infile,integrator,thermal);
 }

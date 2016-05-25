@@ -377,9 +377,10 @@ private:
                      const FiniteElement& fe, const Vec3& X,
                      const Vector& disp) const;
 
+protected:
   //! \brief Computes the coupling matrix for a quadrature point.
   bool evalCouplingMatrix(Matrix& mx, const Matrix& B, const Vector& N,
-                          double scl) const;
+                          double scl, bool transpose = true) const;
 
   //! \brief Computes the compressibility matrix for a quadrature point.
   bool evalCompressibilityMatrix(Matrix& mx, const Vector& N, double scl) const;
@@ -392,7 +393,6 @@ private:
   void evalDynCouplingMatrix(Matrix& mx, const Vector& Nu, const Matrix& dNpdx,
                              const SymmTensor& K, double scl) const;
 
-protected:
   //! \brief Computes the elasticity matrices for a quadrature point.
   //! \param elmInt The element matrix object to receive the contributions
   //! \param[in] B Strain-displacement matrix of current integration point

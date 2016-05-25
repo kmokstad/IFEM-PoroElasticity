@@ -232,14 +232,15 @@ bool PoroElasticity::evalElasticityMatrices (ElmMats& elMat, const Matrix& B,
 
 
 bool PoroElasticity::evalCouplingMatrix (Matrix& mx, const Matrix& B,
-                                         const Vector& N, double scl) const
+                                         const Vector& N, double scl,
+                                         bool transpose) const
 {
   Matrix K(N.size(), nsd * (nsd + 1) / 2);
   for (size_t i = 1; i <= N.size(); i++)
     for (size_t j = 1; j <= nsd; j++)
       K(i,j) = scl * N(i);
 
-  mx.multiply(B, K, true, true, true);
+  mx.multiply(B, K, transpose, true, true);
 
   return true;
 }
@@ -382,7 +383,9 @@ bool PoroElasticity::finalizeElementBou (LocalIntegral& elmInt,
                                          const FiniteElement&,
                                          const TimeDomain& time)
 {
-  static_cast<Mats&>(elmInt).setStepSize(time.dt);
+  Mats* elMats = dynamic_cast<Mats*>(&elmInt);
+  if (elMats)
+    elMats->setStepSize(time.dt);
   return true;
 }
 
