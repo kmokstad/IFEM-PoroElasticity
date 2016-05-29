@@ -513,22 +513,6 @@ std::string PoroNorm::getName(size_t i, size_t j, const char* prefix) const
 }
 
 
-bool PoroNorm::initElement(const std::vector<int>& MNPC,
-                           LocalIntegral& elmInt)
-{
-  return myProblem.initElement(MNPC, elmInt);
-}
-
-
-bool PoroNorm::initElement(const std::vector<int> &MNPC,
-                           const std::vector<size_t> &elem_sizes,
-                           const std::vector<size_t> &basis_sizes,
-                           LocalIntegral &elmInt)
-{
-  return myProblem.initElement(MNPC, elem_sizes, basis_sizes, elmInt);
-}
-
-
 bool PoroNorm::evalIntMx(LocalIntegral& elmInt, const MxFiniteElement& fe,
                          const TimeDomain& time, const Vec3& X) const
 {

@@ -395,22 +395,22 @@ private:
 
 
 /*!
- * \brief Class representing the integrand of the poroelasticity norms.
- */
+  \brief Class representing the integrand of the poroelasticity norms.
+*/
+
 class PoroNorm : public NormBase
 {
 public:
-  //! \brief Initialize members.
+  //! \brief The only constructor initializes its data members.
   //! \param[in] poroel The poroelasticity problem to evaluate norms for
   //! \param[in] disp Displacement solution (optional)
   //! \param[in] d_disp Derivative of displacement (optional)
   //! \param[in] press Pressure solution (optional)
   //! \param[in] d_press Derivative of pressure (optional)
   PoroNorm(PoroElasticity& poroel,
-           VecFunc* disp = 0, TensorFunc* d_disp = 0,
-           RealFunc* press = 0, VecFunc* d_press = 0);
-
-  //! Empty destructor
+           VecFunc* disp = nullptr, TensorFunc* d_disp = nullptr,
+           RealFunc* press = nullptr, VecFunc* d_press = nullptr);
+  //! \brief Empty destructor.
   virtual ~PoroNorm() {}
 
   //! \brief Returns the number of norm groups or the size of a specified group.
@@ -422,7 +422,7 @@ public:
   //! \param[in] i The norm group (one-based index)
   //! \param[in] j The norm number (one-based index)
   //! \param[in] prefix Common prefix for all norm names
-  virtual std::string getName(size_t i, size_t j, const char* prefix = 0) const;
+  virtual std::string getName(size_t i, size_t j, const char* prefix) const;
 
   //! \brief Evaluates the integrand at an interior point (mixed).
   //! \param elmInt The local integral object to receive the contributions
@@ -439,15 +439,6 @@ public:
   //! \param[in] X Cartesian coordinates of current integration point
   virtual bool evalInt(LocalIntegral& elmInt, const FiniteElement& fe,
                        const TimeDomain& time, const Vec3& X) const;
-
-  //! \brief Initializes the current element for numerical integration (mixed).
-  virtual bool initElement(const std::vector<int>& MNPC,
-                           const std::vector<size_t>& elem_sizes,
-                           const std::vector<size_t>& basis_sizes,
-                           LocalIntegral& elmInt);
-
-  //! \brief Initializes the current element for numerical integration.
-  virtual bool initElement(const std::vector<int>& MNPC, LocalIntegral& elmInt);
 
 private:
   VecFunc* displacement;

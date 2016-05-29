@@ -82,7 +82,8 @@ public:
       return false;
 
     this->printSolutionSummary(solution.front());
-    return true;
+
+    return this->postSolve(tp);
   }
 
   //! \brief Prints a summary of the calculated solution to std::cout.
@@ -117,6 +118,25 @@ public:
     }
 
     utl::printSyncronized(std::cout,str,this->adm.getProcId());
+  }
+
+  //! \brief Computes energy norms on the converged solution.
+  bool postSolve(TimeStep& tp)
+  {
+    NormBase* norm = this->getNormIntegrand();
+    if (!norm) return true;
+
+    Vectors gNorms;
+    this->setQuadratureRule(Dim::opt.nGauss[1]);
+    bool ok = this->solutionNorms(tp.time,solution,gNorms);
+    if (ok && !gNorms.empty())
+      for (size_t i = 1; i < gNorms.front().size(); i++)
+        if (utl::trunc(gNorms.front()(i)) != 0.0)
+          IFEM::cout << utl::adjustRight(36,norm->getName(1,i))
+                     << gNorms.front()(i) << std::endl;
+
+    delete norm;
+    return ok;
   }
 
 protected:

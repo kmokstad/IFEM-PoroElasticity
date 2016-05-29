@@ -68,7 +68,8 @@ public:
       return false;
 
     this->printSolutionSummary(dSim.getSolution());
-    return true;
+
+    return this->postSolve(tp);
   }
 
   //! \brief Solves the linearized system of current iteration.
