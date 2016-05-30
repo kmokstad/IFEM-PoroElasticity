@@ -15,6 +15,8 @@
 #define _SIM_PORO_ELASTICITY_H_
 
 #include "SIMElasticityWrap.h"
+#include "SIM2D.h"
+#include "SIM3D.h"
 #include "PoroElasticity.h"
 #include "ASMmxBase.h"
 
@@ -148,11 +150,24 @@ protected:
     return static_cast<Elasticity*>(Dim::myProblem);
   }
 
+  using SIMElasticityWrap<Dim>::parseDimSpecific;
+  //! \brief Parses a dimension-specific data section from an XML element.
+  virtual bool parseDimSpecific(const TiXmlElement*);
+
   //! \brief Returns a const reference to current solution vector.
   virtual const Vector& getSolution(int idx = 0) const { return solution[idx]; }
 
 private:
   Vectors solution; //!< Solution vectors
 };
+
+
+typedef SIMPoroElasticity<SIM2D> SIMPoroEl2D; //!< 2D specific driver
+typedef SIMPoroElasticity<SIM3D> SIMPoroEl3D; //!< 3D specific driver
+
+//! \brief Template specialization - 2D specific input parsing.
+template<> bool SIMPoroEl2D::parseDimSpecific(const TiXmlElement* elem);
+//! \brief Template specialization - 3D specific input parsing.
+template<> bool SIMPoroEl3D::parseDimSpecific(const TiXmlElement* elem);
 
 #endif
