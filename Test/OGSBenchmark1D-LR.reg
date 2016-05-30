@@ -3,7 +3,7 @@ OGSBenchmark1D.xinp -2D -mixed -LR
 	Topology sets: Bottom (1,3,1D)
 	               Top (1,4,1D)
 	               Vertical (1,1,1D) (1,2,1D)
-Elasticity: 2D, gravity = 0 0
+Elasticity: 2D, gravity = 0 9.81
 	Density of Fluid, rhof = 1000
 	Density of Solid, rhos = 2700
 	Bulk Modulus of Water, Kw = 1e+99

@@ -44,7 +44,7 @@ Parsing input file succeeded.
 11. Poroelasticity solver
 Problem definition:
 PoroElasticity: scaling = 1
-Elasticity: 2D, gravity = 0 0
+Elasticity: 2D, gravity = 0 9.81
 	Constitutive Properties:
 		Young's Modulus, E = 1
 		Poisson's Ratio, nu = 0.4

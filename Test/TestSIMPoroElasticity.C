@@ -19,13 +19,13 @@
 TEST(TestSIMPoroElasticity, Parse)
 {
   SIMPoroElasticity<SIM2D> sim;
-  EXPECT_TRUE(sim.read("Plaxis1DVerif.xinp"));
+  ASSERT_TRUE(sim.read("Plaxis1DVerif.xinp"));
 
   const PoroElasticity* poro = static_cast<const PoroElasticity*>(sim.getProblem());
 
   Vec3 grav = poro->getGravity();
   ASSERT_FLOAT_EQ(grav.x,0.0);
-  ASSERT_FLOAT_EQ(grav.y,0.0);
+  ASSERT_FLOAT_EQ(grav.y,9.81);
   ASSERT_FLOAT_EQ(grav.z,0.0);
   ASSERT_FLOAT_EQ(poro->getScaling(Vec3()),0.0);
 }

@@ -26,7 +26,7 @@
 PoroElasticity::PoroElasticity (unsigned short int n) : Elasticity(n)
 {
   sc = 0.0;
-  gacc = 9.81; //kmo: Danger! hard-coded physical property. Why not derive this one from gravity.length() instead ???
+  gravity[n-1] = 9.81; // Default gravity acceleration
   calculateEnergy = false;
 }
 
@@ -77,7 +77,7 @@ double PoroElasticity::getScaling (const Vec3& X, double dt) const
   const PoroMaterial* pmat = dynamic_cast<const PoroMaterial*>(material);
   if (!pmat) return sc;
 
-  double rhog = pmat->getFluidDensity(X) * gacc;
+  double rhog = pmat->getFluidDensity(X) * gravity.length();
   Vec3 permeability = pmat->getPermeability(X);
   return sqrt(pmat->getStiffness(X) * rhog / permeability.x / dt);
 }
@@ -290,7 +290,7 @@ bool PoroElasticity::evalInt (LocalIntegral& elmInt,
   Vec3 permeability = pmat->getPermeability(X);
 
   // Evaluate other material parameters
-  double rhog  = pmat->getFluidDensity(X)*gacc;
+  double rhog  = pmat->getFluidDensity(X) * gravity.length();
   double poro  = pmat->getPorosity(X);
   double alpha = pmat->getBiotCoeff(X);
   double Minv  = pmat->getBiotModulus(X,alpha,poro);

@@ -1,5 +1,7 @@
 <?xml version="1.0" encoding="UTF-8" standalone="yes"?>
+
 <simulation>
+
   <!-- General - geometry definitions !-->
   <geometry>
     <raiseorder patch="1" u="1" v="1"/>
@@ -20,12 +22,9 @@
   <!-- General - boundary conditions !-->
   <boundaryconditions>
     <dirichlet set="Vertical" basis="1" comp="1"/>
-    <dirichlet set="Bottom" basis="1" comp="1"/>
-    <dirichlet set="Bottom" basis="1" comp="2"/>
+    <dirichlet set="Bottom" basis="1" comp="12"/>
     <dirichlet set="Top" basis="2" comp="1"/>
-    <neumann set="Top" basis="1" direction="0" type="expression">
-      -1000000.0
-    </neumann>
+    <neumann set="Top" basis="1" direction="2">-1000000.0</neumann>
   </boundaryconditions>
 
   <!-- Problem-specific block !-->
@@ -33,7 +32,6 @@
     <isotropic poro="0.5" E="1000000" nu="0.0" Kw="1e99" Ks="1e99" Ko="0"
                rhof="1000.0" rhos="2700.0"
                perm="0.0000000115741 0.0000000115741 0.0"/>
-    <gravity>0.0 0.0 0.0</gravity>
   </poroelasticity>
 
   <timestepping start="0" end="16951.64" dt="8475.82"/>

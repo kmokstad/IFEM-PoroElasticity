@@ -238,9 +238,6 @@ public:
   //! \brief Returns the scaling factor at given location.
   double getScaling(const Vec3& X, double dt = 0.0) const;
 
-  //! \brief Returns the current gravity vector (for unit testing).
-  const Vec3 getGravity() const { return gravity; }
-
   //! \brief Returns a local integral contribution object for the given element.
   //! \param[in] nen Number of nodes on element for each basis
   //! \param[in] neumann Whether or not we are assembling Neumann BCs
@@ -385,8 +382,7 @@ protected:
                                       const Vec3& X) const;
 
 private:
-  double sc;   //!< Scaling factor
-  double gacc; //!< Gravitational acceleration
+  double sc; //!< Scaling factor
 
   bool calculateEnergy; //!< If \e true, perform energy norm calculation
 
@@ -441,10 +437,10 @@ public:
                        const TimeDomain& time, const Vec3& X) const;
 
 private:
-  VecFunc* displacement;
-  TensorFunc* d_displacement;
-  RealFunc* pressure;
-  VecFunc* d_pressure;
+  VecFunc*    displacement;   //!< Analytical displacement field
+  TensorFunc* d_displacement; //!< Analytical displacement gradient
+  RealFunc*   pressure;       //!< Analytical pressure field
+  VecFunc*    d_pressure;     //!< Analytical pressure gradient
 };
 
 #endif
