@@ -15,7 +15,8 @@
 #include "Utilities.h"
 
 
-PoroElasticity::Mats::Mats (size_t ndof_displ, size_t ndof_press, bool neumann)
+PoroElasticity::Mats::Mats (size_t ndof_displ, size_t ndof_press,
+                            bool neumann, char dynamic)
 {
   this->resize(NMAT, NVEC);
 
@@ -30,9 +31,11 @@ PoroElasticity::Mats::Mats (size_t ndof_displ, size_t ndof_press, bool neumann)
   if (withLHS) {
     A[Nsys].resize(ndof_total, ndof_total);
     A[uu_K].resize(ndof_displ, ndof_displ);
-    A[uu_M].resize(ndof_displ, ndof_displ);
+    if (dynamic > 0)
+      A[uu_M].resize(ndof_displ, ndof_displ);
     A[up_Q].resize(ndof_displ, ndof_press);
-    A[up_D].resize(ndof_displ, ndof_press);
+    if (dynamic == 2)
+      A[up_D].resize(ndof_displ, ndof_press);
     A[pp_S].resize(ndof_press, ndof_press);
     A[pp_P].resize(ndof_press, ndof_press);
   }

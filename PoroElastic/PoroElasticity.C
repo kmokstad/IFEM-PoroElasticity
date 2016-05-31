@@ -27,7 +27,7 @@ PoroElasticity::PoroElasticity (unsigned short int n) : Elasticity(n)
 {
   sc = 0.0;
   gravity[n-1] = 9.81; // Default gravity acceleration
-  calculateEnergy = false;
+  calculateEnergy = useDynCoupling = false;
 }
 
 
@@ -35,6 +35,8 @@ bool PoroElasticity::parse (const TiXmlElement* elem)
 {
   if (!strncasecmp(elem->Value(),"calcEn",6))
     calculateEnergy = true;
+  else if (!strncasecmp(elem->Value(),"useDynC",7))
+    useDynCoupling = true;
   else if (strcasecmp(elem->Value(),"scaling"))
     return this->Elasticity::parse(elem);
   else if (utl::getAttribute(elem,"value",sc))
@@ -56,7 +58,8 @@ Material* PoroElasticity::parseMatProp (const TiXmlElement* elem, bool)
 
 void PoroElasticity::printLog () const
 {
-  IFEM::cout <<"PoroElasticity: scaling = "<< sc << std::endl;
+  IFEM::cout <<"PoroElasticity: scaling = "<< sc <<" useDynCoupling = "
+             << std::boolalpha << useDynCoupling << std::endl;
   this->Elasticity::printLog();
 }
 
@@ -88,7 +91,8 @@ LocalIntegral* PoroElasticity::getLocalIntegral (const std::vector<size_t>& nen,
 {
   if (m_mode == SIM::DYNAMIC)
     return new NewmarkMats<MixedElmMats>(nsd * nen[0], nen[1], neumann,
-                                         intPrm[2], intPrm[3], intPrm[0], intPrm[1]);
+                                         intPrm[2], intPrm[3],
+                                         intPrm[0], intPrm[1], useDynCoupling);
   else
     return new MixedElmMats(nsd * nen[0], nen[1], neumann);
 }
@@ -299,11 +303,12 @@ bool PoroElasticity::evalInt (LocalIntegral& elmInt,
   // Integrate the element matrices, depending on solution mode
   ElmMats& elMat = static_cast<ElmMats&>(elmInt);
 
-  if (m_mode == SIM::DYNAMIC) {
+  if (!elMat.A[uu_M].empty())
     this->formMassMatrix(elMat.A[uu_M], fe.basis(1), X, fe.detJxW);
+
+  if (!elMat.A[up_D].empty())
     this->evalDynamicCouplingMatrix(elMat.A[up_D], fe.basis(1), fe.grad(2),
                                     permeability, scl / rhog * fe.detJxW);
-  }
 
   if (!this->evalElasticityMatrices(elMat, Bmat, fe, X))
     return false;

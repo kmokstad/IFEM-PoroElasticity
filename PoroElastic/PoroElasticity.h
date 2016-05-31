@@ -75,7 +75,9 @@ protected:
     //! \param[in] ndof_displ Number of dofs in displacement
     //! \param[in] ndof_press Number of dofs in pressure
     //! \param[in] neumann Whether or not we are assembling Neumann BCs
-    Mats(size_t ndof_displ, size_t ndof_press, bool neumann);
+    //! \param[in] dynamic Option for dynamic analysis
+    //! (0: static analysis, 1: allocate M, 2: allocate M and D)
+    Mats(size_t ndof_displ, size_t ndof_press, bool neumann, char dynamic);
     //! \brief Empty destructor.
     virtual ~Mats() {}
     //! \brief Updates the time step size.
@@ -103,10 +105,10 @@ private:
   class MixedElmMats : public Mats
   {
   public:
-    //! \brief Default constructor
-    MixedElmMats(size_t ndof_displ, size_t ndof_press, bool neumann)
-      : Mats(ndof_displ, ndof_press, neumann) {}
-    //! \brief Empty destructor
+    //! \brief The constructor forwards to the parent class constructor.
+    MixedElmMats(size_t ndof_d, size_t ndof_p, bool neumann, char dyn = 0)
+      : Mats(ndof_d, ndof_p, neumann, dyn) {}
+    //! \brief Empty destructor.
     virtual ~MixedElmMats() {}
     //! \brief Adds in a UU-matrix to a system matrix
     virtual void add_uu(const Matrix& source, Matrix& target, double scale = 1.0) const;
@@ -124,10 +126,10 @@ private:
   class NonMixedElmMats : public Mats
   {
   public:
-    //! \brief Default constructor
-    NonMixedElmMats(size_t ndof_displ, size_t ndof_press, bool neumann)
-      : Mats(ndof_displ, ndof_press, neumann) {}
-    //! \brief Empty destructor
+    //! \brief The constructor forwards to the parent class constructor.
+    NonMixedElmMats(size_t ndof_d, size_t ndof_p, bool neumann, char dyn = 0)
+      : Mats(ndof_d, ndof_p, neumann, dyn) {}
+    //! \brief Empty destructor.
     virtual ~NonMixedElmMats() {}
     //! \brief Adds in a UU-matrix to a system matrix
     virtual void add_uu(const Matrix& source, Matrix& target, double scale = 1.0) const;
@@ -147,9 +149,10 @@ private:
   public:
     //! \brief The constructor initializes the time integration parameters.
     NewmarkMats(size_t ndof_d, size_t ndof_p, bool neumann,
-                double b, double c, double m = 0.0, double s = 0.0)
-      : P(ndof_d,ndof_p,neumann), beta(fabs(b)), gamma(c), m_damp(m), s_damp(s)
-    { slvDisp = b < 0.0; }
+                double b, double c, double m = 0.0, double s = 0.0,
+                bool useDynCpl = false)
+      : P(ndof_d, ndof_p, neumann, useDynCpl ? 2 : 1),
+        beta(fabs(b)), gamma(c), m_damp(m), s_damp(s), slvDisp(b < 0.0) {}
     //! \brief Empty destructor.
     virtual ~NewmarkMats() {}
     //! \brief Returns the element-level Newton matrix.
@@ -162,7 +165,8 @@ private:
       this->add_uu(P::A[uu_K], res, betah2 + gammah * s_damp);
       this->add_up(P::A[up_Q], res,-betah2);
       this->add_pu(P::A[up_Q], res, gammah);
-      this->add_pu(P::A[up_D], res,-1.0);
+      if (!P::A[up_D].empty())
+        this->add_pu(P::A[up_D], res, -1.0);
       this->add_pp(P::A[pp_S], res, gammah);
       this->add_pp(P::A[pp_P], res, betah2);
       if (slvDisp) res.multiply(1.0/betah2);
@@ -188,7 +192,7 @@ private:
         P::A[pp_P].multiply(P::vec[Vp],    tp, false,-1);
       if (P::A.size() > uu_M && P::vec.size() > Vuacc)
         P::A[uu_M].multiply(P::vec[Vuacc], tu, false,-1);
-      if (P::A.size() > up_D && P::vec.size() > Vuacc)
+      if (P::A.size() > up_D && P::vec.size() > Vuacc && !P::A[up_D].empty())
         P::A[up_D].multiply(P::vec[Vuacc], tp, true,  1);
       if (P::A.size() > pp_S && P::vec.size() > Vpvel)
         P::A[pp_S].multiply(P::vec[Vpvel], tp, false,-1);
@@ -394,6 +398,7 @@ private:
   double sc; //!< Scaling factor
 
   bool calculateEnergy; //!< If \e true, perform energy norm calculation
+  bool useDynCoupling;  //!< If \e true, include the dynamic coupling matrix
 
   friend class PoroNorm;
 };
