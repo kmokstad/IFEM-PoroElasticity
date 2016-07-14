@@ -413,6 +413,8 @@ private:
   bool calculateEnergy; //!< If \e true, perform energy norm calculation
   bool useDynCoupling;  //!< If \e true, include the dynamic coupling matrix
 
+  RealFunc* volumeFlux; //!< Applied volumetric flux
+
   friend class PoroNorm;
 };
 

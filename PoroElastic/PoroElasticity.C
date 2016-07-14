@@ -17,6 +17,7 @@
 #include "ElmNorm.h"
 #include "TimeDomain.h"
 #include "Utilities.h"
+#include "Functions.h"
 #include "AnaSol.h"
 #include "Tensor.h"
 #include "IFEM.h"
@@ -28,6 +29,7 @@ PoroElasticity::PoroElasticity (unsigned short int n) : Elasticity(n)
   sc = 0.0;
   gravity[n-1] = 9.81; // Default gravity acceleration
   calculateEnergy = useDynCoupling = false;
+  volumeFlux = nullptr;
 }
 
 
@@ -37,6 +39,11 @@ bool PoroElasticity::parse (const TiXmlElement* elem)
     calculateEnergy = true;
   else if (!strncasecmp(elem->Value(),"useDynC",7))
     useDynCoupling = true;
+  else if (!strncasecmp(elem->Value(),"volumeflux",10)) {
+    std::string type;
+    utl::getAttribute(elem,"type",type);
+    volumeFlux = utl::parseRealFunc(elem->GetText(),type);
+  }
   else if (strcasecmp(elem->Value(),"scaling"))
     return this->Elasticity::parse(elem);
   else if (utl::getAttribute(elem,"value",sc))
@@ -339,8 +346,14 @@ bool PoroElasticity::evalInt (LocalIntegral& elmInt,
                                 scl*alpha*fe.detJxW))
     return false;
 
-  return this->evalCompressibilityMatrix(elMat.A[pp_S], fe.basis(2),
-                                         scl*scl*Minv*fe.detJxW);
+  if (!this->evalCompressibilityMatrix(elMat.A[pp_S], fe.basis(2),
+                                       scl*scl*Minv*fe.detJxW))
+    return false;
+
+  if (volumeFlux)
+    elMat.b[Fp].add(fe.basis(2),(*volumeFlux)(X)*fe.detJxW);
+
+  return true;
 }
 
 
