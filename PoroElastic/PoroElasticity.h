@@ -24,6 +24,7 @@
 
 class PoroElasticity : public Elasticity
 {
+public:
   //! \brief Enum for element-level solution vectors.
   enum SolutionVectors
   {
