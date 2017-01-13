@@ -79,7 +79,7 @@ include(IFEMTesting)
 configure_file(${IFEM_REGTEST_SCRIPT} regtest.sh)
 
 # Regression tests
-if(IFEM_USE_PARALLEL_PETSC)
+if(MPI_FOUND)
   # Add parallel tests here
 else()
   ifem_add_test(Plaxis1DVerif.reg PoroElasticity)
