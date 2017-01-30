@@ -18,21 +18,6 @@ endif()
 include_directories(${IFEM_INCLUDES} ../Common ${PROJECT_SOURCE_DIR}
                     ${PROJECT_SOURCE_DIR}/PoroElastic)
 
-# Generate doxy in build tree
-if(EXISTS ${PROJECT_SOURCE_DIR}/doc/Doxyfile.in)
-  CONFIGURE_FILE(${PROJECT_SOURCE_DIR}/doc/Doxyfile.in Doxyfile @ONLY)
-endif()
-
-if(EXISTS ${PROJECT_BINARY_DIR}/Doxyfile)
-  add_custom_target(PoroElasticity-doc doxygen ${PROJECT_BINARY_DIR}/Doxyfile
-                    WORKING_DIRECTORY ${PROJECT_SOURCE_DIR}
-                    COMMENT "Generating API documentation" VERBATIM)
-  if(NOT TARGET doc)
-    add_custom_target(doc)
-  endif()
-  add_dependencies(doc PoroElasticity-doc)
-endif()
-
 set(EXECUTABLE_OUTPUT_PATH ${CMAKE_BINARY_DIR}/bin)
 
 if(NOT WIN32)
@@ -63,13 +48,28 @@ target_link_libraries(PoroElasticity PoroElastic Elasticity ${IFEM_LIBRARIES})
 # Installation
 install(TARGETS PoroElasticity DESTINATION bin COMPONENT bin)
 
-if(INSTALL_DOXY)
+# For generating the doxy
+if(IFEM_AS_SUBMODULE OR IFEM_INTREE_BUILD)
+  set(EXTRA_DOXY_PATHS "${PROJECT_SOURCE_DIR} \\
+                        ${PROJECT_BINARY_DIR} \\
+                        ${PROJECT_SOURCE_DIR}/PoroElastic \\
+                        ${PROJECT_SOURCE_DIR}/../IFEM-Elasticity")
+  configure_file(${IFEM_PATH}/doc/Doxyfile.in Doxyfile)
+else()
+  configure_file(doc/Doxyfile.in Doxyfile)
+endif()
+configure_file(doc/PoroElasticity.dox.in PoroElasticity.dox)
+add_custom_target(doc doxygen ${PROJECT_BINARY_DIR}/Doxyfile
+                  WORKING_DIRECTORY ${PROJECT_SOURCE_DIR}
+                  COMMENT "Generating API documentation" VERBATIM)
+
+if(IFEM_INSTALL_DOXY)
   install(CODE "EXECUTE_PROCESS(COMMAND ${CMAKE_BUILD_TOOL} doc WORKING_DIRECTORY \"${CMAKE_CURRENT_BINARY_DIR}\")" COMPONENT doc)
   install(DIRECTORY ${PROJECT_BINARY_DIR}/doc/html DESTINATION ${CMAKE_INSTALL_DOCDIR}/Apps/PoroElasticity
           COMPONENT doc
           PATTERN *.md5 EXCLUDE
           PATTERN *.map EXCLUDE)
-endif(INSTALL_DOXY)
+endif(IFEM_INSTALL_DOXY)
 
 # Testing
 enable_testing()
