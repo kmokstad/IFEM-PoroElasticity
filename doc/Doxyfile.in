@@ -574,7 +574,9 @@ WARN_LOGFILE           =
 # directories like "/usr/src/myproject". Separate the files or directories
 # with spaces.
 
-INPUT                  = . ./doc ./PoroElastic ../Elasticity ../Common \
+INPUT                  = @PROJECT_SOURCE_DIR@ \
+                         @PROJECT_SOURCE_DIR@/PoroElastic \
+                         @PROJECT_SOURCE_DIR@/../IFEM-Elasticity
                          @PROJECT_BINARY_DIR@
 
 # This tag can be used to specify the character encoding of the source files
