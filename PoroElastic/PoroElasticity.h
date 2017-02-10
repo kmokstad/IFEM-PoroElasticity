@@ -222,8 +222,8 @@ public:
   //! \param[in] n Number of spatial dimensions
   //! \param[in] mix If \e true, a mixed formulation is used
   explicit PoroElasticity(unsigned short int n = 3, bool mix = false);
-  //! \brief Empty destructor.
-  virtual ~PoroElasticity() {}
+  //! \brief The destructor deletes the volume flux function, if any.
+  virtual ~PoroElasticity();
 
   using Elasticity::parseMatProp;
   //! \brief Parses material properties from an XML-element.
@@ -242,6 +242,9 @@ public:
   virtual bool init(const TimeDomain& time);
   //! \brief Returns the scaling factor.
   double getScaling() const { return scl; }
+
+  //! \brief Sets the boundary flux field.
+  void setBoundaryFlux(RealFunc* f) { fluxFld = f; }
 
   //! \brief Returns a local integral contribution object for the given element.
   //! \param[in] nen Number of nodes on element for each basis
@@ -300,15 +303,25 @@ public:
   virtual bool evalInt(LocalIntegral& elmInt, const FiniteElement& fe,
                        const TimeDomain& time, const Vec3& X) const;
 
-  using Elasticity::evalBouMx;
+  //! \brief Evaluates the integrand at a boundary point.
+  //! \param elmInt The local interal object to receive the contributions
+  //! \param[in] fe Finite element data of current integration point
+  //! \param[in] time Parameters for nonlinear and time-dependent simulations
+  //! \param[in] X Cartesian coordinates of current integration point
+  //! \param[in] normal Boundary normal vector at current integration point
+  virtual bool evalBouMx(LocalIntegral& elmInt, const MxFiniteElement& fe,
+                         const TimeDomain& time, const Vec3& X,
+                         const Vec3& normal) const;
+
+  using Elasticity::evalBou;
   //! \brief Evaluates the integrand at a boundary point.
   //! \param elmInt The local interal object to receive the contributions
   //! \param[in] fe Finite element data of current integration point
   //! \param[in] X Cartesian coordinates of current integration point
   //! \param[in] normal Boundary normal vector at current integration point
-  virtual bool evalBouMx(LocalIntegral& elmInt, const MxFiniteElement& fe,
-                         const TimeDomain&, const Vec3& X,
-                         const Vec3& normal) const;
+  virtual bool evalBou(LocalIntegral& elmInt, const FiniteElement& fe,
+                       const TimeDomain&, const Vec3& X,
+                       const Vec3& normal) const;
 
   using Elasticity::evalSol;
   //! \brief Evaluates the secondary solution at a result point.
@@ -407,6 +420,7 @@ private:
   bool useDynCoupling;  //!< If \e true, include the dynamic coupling matrix
 
   RealFunc* volumeFlux; //!< Applied volumetric flux
+  RealFunc* fluxFld;    //!< Boundary flux field
 
   friend class PoroNorm;
 };
