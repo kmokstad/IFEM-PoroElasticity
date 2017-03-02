@@ -500,15 +500,14 @@ NormBase* PoroElasticity::getNormIntegrand (AnaSol* sol) const
 
 
 PoroNorm::PoroNorm(PoroElasticity& poroel,
-                   VecFunc* disp, TensorFunc* d_disp,
-                   RealFunc* press, VecFunc* d_press)
-  : NormBase(poroel)
-  , displacement(disp)
-  , d_displacement(d_disp)
-  , pressure(press)
-  , d_pressure(d_press)
+                   VecFunc* disp, TensorFunc* /*d_disp*/,
+                   RealFunc* press, VecFunc* /*d_press*/) : NormBase(poroel)
 {
   nrcmp = 2;
+  displacement = disp;
+//  d_displacement = d_disp;
+  pressure = press;
+//  d_pressure = d_press;
 }
 
 
