@@ -17,7 +17,6 @@
 #include "SIMDynPoroElasticity.h"
 #include "SIMSolver.h"
 #include "GenAlphaSIM.h"
-#include "AppCommon.h"
 #include "Profiler.h"
 
 
@@ -64,15 +63,11 @@ template<class Dim, class Sim> int runSimulator (char* infile)
     return 2;
 
   // HDF5 output
-  DataExporter* exporter = nullptr;
   if (model.opt.dumpHDF5(infile))
-    exporter = SIM::handleDataOutput(model,solver,model.opt.hdf5,false,
-                                     model.opt.saveInc,model.opt.restartInc);
+    solver.handleDataOutput(model.opt.hdf5,model.opt.saveInc,
+                            model.opt.restartInc);
 
-  int res = solver.solveProblem(infile,exporter,"100. Starting the simulation");
-
-  delete exporter;
-  return res;
+  return solver.solveProblem(infile,"100. Starting the simulation");
 }
 
 
