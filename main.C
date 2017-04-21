@@ -52,18 +52,22 @@ template<class Dim, class Sim> int runSimulator (char* infile)
   if (!model.preprocess())
     return 2;
 
-  // Initialize the linear solvers
-  if (!model.initSystem(model.opt.solver))
+  // Initialize the linear solvers, include assembly of reaction forces
+  if (!model.initSystem(model.opt.solver,1,1,0,true))
     return 2;
 
-  // Initialize the solution fields
+  // Initialize the solution vectors, load initial conditions unless a restart
   model.init(TimeStep());
-  model.setInitialConditions();
+  if (model.opt.restartFile.empty())
+    model.setInitialConditions();
+  else if (solver.restart(model.opt.restartFile,model.opt.restartStep) < 0)
+    return 2;
 
   // HDF5 output
   DataExporter* exporter = nullptr;
   if (model.opt.dumpHDF5(infile))
-    exporter = SIM::handleDataOutput(model,solver,model.opt.hdf5,false,1,1);
+    exporter = SIM::handleDataOutput(model,solver,model.opt.hdf5,false,
+                                     model.opt.saveInc,model.opt.restartInc);
 
   int res = solver.solveProblem(infile,exporter,"100. Starting the simulation");
 
@@ -94,20 +98,19 @@ template<class Dim> int runSimulator (char* infile, char integrator)
   \brief Main program for NURBS-based poroelasticity solver.
 */
 
-int main (int argc, char ** argv)
+int main (int argc, char** argv)
 {
   Profiler prof(argv[0]);
   utl::profiler->start("Initialization");
 
-  int i;
-  char* infile = 0;
+  char* infile = nullptr;
   char integrator = 0;
   bool twoD = false;
   ASMmxBase::Type = ASMmxBase::NONE;
 
-  IFEM::Init(argc,argv);
+  IFEM::Init(argc,argv,"Poroelasticity solver");
 
-  for (i = 1; i < argc; i++)
+  for (int i = 1; i < argc; i++)
     if (SIMoptions::ignoreOldOptions(argc,argv,i))
       ; // ignore the obsolete option
     else if (!strcmp(argv[i],"-2D"))
@@ -133,13 +136,8 @@ int main (int argc, char ** argv)
     return 0;
   }
 
-  IFEM::cout <<"\n >>> IFEM Poroelasticity Solver <<<"
-             <<"\n =================================="
-             <<"\n Executing command:\n";
-  for (i = 0; i < argc; i++) IFEM::cout <<" "<< argv[i];
-  IFEM::cout <<"\n\n Input file: "<< infile;
-  IFEM::getOptions().print(IFEM::cout);
-  IFEM::cout << std::endl;
+  IFEM::cout <<"\n Input file: "<< infile;
+  IFEM::getOptions().print(IFEM::cout) << std::endl;
 
   if (twoD)
     return runSimulator<SIM2D>(infile,integrator);
