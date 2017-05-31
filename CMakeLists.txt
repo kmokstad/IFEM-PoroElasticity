@@ -38,6 +38,8 @@ add_executable(PoroElasticity main.C)
 
 target_link_libraries(PoroElasticity PoroElastic Elasticity ${IFEM_LIBRARIES})
 
+list(APPEND CHECK_SOURCES main.C)
+
 # Installation
 install(TARGETS PoroElasticity DESTINATION bin COMPONENT bin)
 
@@ -51,9 +53,6 @@ add_doc_target(PoroElasticity PoroElasticity)
 # Testing
 enable_testing()
 include(IFEMTesting)
-
-# Generate regtest script with correct paths
-configure_file(${IFEM_REGTEST_SCRIPT} regtest.sh)
 
 # Regression tests
 if(MPI_FOUND)
