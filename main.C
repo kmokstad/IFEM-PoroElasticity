@@ -51,12 +51,12 @@ template<class Dim, class Sim> int runSimulator (char* infile)
   if (!model.preprocess())
     return 2;
 
-  // Initialize the linear solvers, include assembly of reaction forces
-  if (!model.initSystem(model.opt.solver,1,1,0,true))
+  // Initialize the linear solvers and solution vectors,
+  // include assembly of reaction forces
+  if (!model.init(TimeStep(),true))
     return 2;
 
-  // Initialize the solution vectors, load initial conditions unless a restart
-  model.init(TimeStep());
+  // Load initial conditions unless a restart
   if (model.opt.restartFile.empty())
     model.setInitialConditions();
   else if (solver.restart(model.opt.restartFile,model.opt.restartStep) < 0)

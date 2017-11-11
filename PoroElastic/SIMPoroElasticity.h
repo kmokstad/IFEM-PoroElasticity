@@ -19,11 +19,6 @@
 #include "SIM3D.h"
 #include "PoroElasticity.h"
 #include "ASMmxBase.h"
-#ifdef HAS_CEREAL
-#include <cereal/cereal.hpp>
-#include <cereal/archives/binary.hpp>
-#include <cereal/types/vector.hpp>
-#endif
 
 
 /*!
@@ -51,30 +46,6 @@ public:
   //! \brief Returns the name of this simulator (for use in the HDF5 export).
   virtual std::string getName() const { return "PoroElasticity"; }
 
-  //! \brief Initializes the solution vectors.
-  virtual bool init(const TimeStep&)
-  {
-    bool ok = this->setMode(SIM::STATIC);
-
-    solution.resize(this->getNoSolutions());
-    for (size_t i = 0; i < solution.size(); i++)
-      solution[i].resize(this->getNoDOFs(),true);
-
-    this->setQuadratureRule(Dim::opt.nGauss[0],true);
-    return ok;
-  }
-
-  //! \brief Advances the time step one step forward.
-  virtual bool advanceStep(TimeStep& tp)
-  {
-    // Update vectors between time steps
-    const int nNusols = solution.size();
-    for (int n = nNusols-1; n > 0; n--)
-      solution[n] = solution[n-1];
-
-    return this->SIMElasticity<Dim>::advanceStep(tp);
-  }
-
   //! \brief Computes the solution for the current time step.
   virtual bool solveStep(TimeStep& tp)
   {
@@ -82,13 +53,15 @@ public:
       IFEM::cout <<"\n  step = "<< tp.step
                  <<"  time = "<< tp.time.t << std::endl;
 
-    if (!this->assembleSystem(tp.time,solution))
+    this->setMode(SIM::STATIC);
+    this->setQuadratureRule(Dim::opt.nGauss[0],true);
+    if (!this->assembleSystem(tp.time,SIMsolution::solution))
       return false;
 
-    if (!this->solveSystem(solution.front()))
+    if (!this->solveSystem(SIMsolution::solution.front(),Dim::msgLevel-1))
       return false;
 
-    this->printSolutionSummary(solution.front());
+    this->printSolutionSummary(SIMsolution::solution.front());
 
     return this->postSolve(tp);
   }
@@ -128,8 +101,9 @@ public:
     if (!norm) return true;
 
     Vectors gNorms;
+    this->setMode(SIM::RECOVERY);
     this->setQuadratureRule(Dim::opt.nGauss[1]);
-    bool ok = this->solutionNorms(tp.time,solution,gNorms);
+    bool ok = this->solutionNorms(tp.time,SIMsolution::solution,gNorms);
     if (ok && !gNorms.empty())
       for (size_t i = 1; i <= gNorms.front().size(); i++)
         if (utl::trunc(gNorms.front()(i)) != 0.0)
@@ -138,40 +112,6 @@ public:
 
     delete norm;
     return ok;
-  }
-
-  //! \brief Serialize internal state for restarting purposes.
-  //! \param data Container for serialized data
-  bool serialize(DataExporter::SerializeData& data)
-  {
-#ifdef HAS_CEREAL
-    std::ostringstream str;
-    cereal::BinaryOutputArchive ar(str);
-    for (size_t i = 0; i < solution.size(); ++i)
-      ar(solution[i]);
-    data.insert(std::make_pair(this->getName(), str.str()));
-    return true;
-#else
-    return false;
-#endif
-  }
-
-  //! \brief Set internal state from a serialized state.
-  //! \param[in] data Container for serialized data
-  bool deSerialize(const DataExporter::SerializeData& data)
-  {
-#ifdef HAS_CEREAL
-    std::stringstream str;
-    auto it = data.find(this->getName());
-    if (it != data.end()) {
-      str << it->second;
-      cereal::BinaryInputArchive ar(str);
-      for (size_t i = 0; i < solution.size(); ++i)
-        ar(solution[i]);
-      return true;
-    }
-#endif
-    return false;
   }
 
 protected:
@@ -186,12 +126,6 @@ protected:
   using SIMElasticityWrap<Dim>::parseDimSpecific;
   //! \brief Parses a dimension-specific data section from an XML element.
   virtual bool parseDimSpecific(const TiXmlElement*);
-
-  //! \brief Returns a const reference to current solution vector.
-  virtual const Vector& getSolution(int idx = 0) const { return solution[idx]; }
-
-private:
-  Vectors solution; //!< Solution vectors
 };
 
 

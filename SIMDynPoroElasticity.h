@@ -48,8 +48,11 @@ public:
   }
 
   //! \brief Initializes the problem.
-  virtual bool init(const TimeStep&)
+  virtual bool init(const TimeStep&, bool withRF)
   {
+    if (!this->initSystem(Dim::opt.solver,1,1,0,withRF))
+      return false;
+
     dSim.initPrm();
     dSim.initSol(3);
 
@@ -93,41 +96,13 @@ public:
   //! \brief Returns a const reference to current solution vector.
   virtual const Vector& getSolution(int i) const { return dSim.getSolution(i); }
 
-  //! \brief Serialize internal state for restarting purposes.
-  //! \param data Container for serialized data
-  bool serialize(DataExporter::SerializeData& data)
-  {
-#ifdef HAS_CEREAL
-    std::ostringstream str;
-    cereal::BinaryOutputArchive ar(str);
-    for (size_t i = 0; i < 3; ++i)
-      ar(dSim.getSolution(i));
-    data.insert(std::make_pair(this->getName(), str.str()));
-    return true;
-#else
-    return false;
-#endif
-  }
-
-  //! \brief Set internal state from a serialized state.
-  //! \param data Container for serialized data
-  bool deSerialize(const DataExporter::SerializeData& data)
-  {
-#ifdef HAS_CEREAL
-    std::stringstream str;
-    auto it = data.find(this->getName());
-    if (it != data.end()) {
-      str << it->second;
-      cereal::BinaryInputArchive ar(str);
-      for (size_t i = 0; i < 3; ++i)
-        ar(const_cast<Vector&>(dSim.getSolution(i)));
-      return true;
-    }
-#endif
-    return false;
-  }
+  //! \brief Returns a const reference to the solution vectors.
+  virtual const Vectors& getSolutions() const { return dSim.getSolutions(); }
 
 protected:
+  //! \brief Returns a reference to the solution vectors (for assignment).
+  virtual Vectors& theSolutions() { return dSim.theSolutions(); }
+
   using SIMPoroElasticity<Dim>::parse;
   //! \brief Parses a data section from an XML element.
   virtual bool parse(const TiXmlElement* elem)

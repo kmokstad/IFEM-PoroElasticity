@@ -8,18 +8,6 @@ Step 1
     Scalar: 'u_y'
     Scalar: 'u_z'
     Scalar: 'p^w'
-    Scalar: 'eps_x'
-    Scalar: 'eps_y'
-    Scalar: 'eps_z'
-    Scalar: 'eps_yz'
-    Scalar: 'eps_xz'
-    Scalar: 'eps_xy'
-    Scalar: 'sig_x'
-    Scalar: 'sig_y'
-    Scalar: 'sig_z'
-    Scalar: 'sig_yz'
-    Scalar: 'sig_xz'
-    Scalar: 'sig_xy'
     Vector: 'u'
 Step 2
   Element block 1
