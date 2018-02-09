@@ -563,7 +563,7 @@ WARN_FORMAT            = "$file:$line: $text"
 # and error messages should be written. If left blank the output is written
 # to stderr.
 
-WARN_LOGFILE           =
+WARN_LOGFILE           = @PROJECT_BINARY_DIR@/DoxyWarnings.log
 
 #---------------------------------------------------------------------------
 # configuration options related to the input files
@@ -576,7 +576,7 @@ WARN_LOGFILE           =
 
 INPUT                  = @PROJECT_SOURCE_DIR@ \
                          @PROJECT_SOURCE_DIR@/PoroElastic \
-                         @PROJECT_SOURCE_DIR@/../IFEM-Elasticity
+                         @PROJECT_SOURCE_DIR@/../IFEM-Elasticity \
                          @PROJECT_BINARY_DIR@
 
 # This tag can be used to specify the character encoding of the source files
