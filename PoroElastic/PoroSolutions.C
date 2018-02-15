@@ -18,11 +18,7 @@
 
 double TerzhagiPressure::evaluate (const Vec3& X) const
 {
-  double y = X.y;
-
-  const Vec4& Xt = static_cast<const Vec4&>(X);
-
-  double k = myMat->getPermeability(X)[0];
+  double k = myMat->getPermeability(X).x;
   double rhof = myMat->getFluidDensity(X);
   double E = myMat->getStiffness(X);
   double nu = myMat->getPoisson(X);
@@ -30,38 +26,33 @@ double TerzhagiPressure::evaluate (const Vec3& X) const
   double alpha = myMat->getBiotCoeff(X);
   double Minv = myMat->getBiotModulus(X,alpha,n);
 
-  double K = E / 3 / (1 - 2*nu);
-  double G = E / 2 / (1 + nu);
-  double mv = 1 / (K + 4*G/3);
-  double cv = k / rhof / gacc / (alpha * alpha * mv + Minv);
+  double K  = E / (3.0 - 6.0*nu);
+  double G  = E / (2.0 + 2.0*nu);
+  double cv = k / (rhof * gacc * (alpha*alpha / (K + G*4.0/3.0) + Minv));
 
-  double stime = cv * Xt.t / height / height;
+  const Vec4& Xt = static_cast<const Vec4&>(X);
+  double stime = cv * Xt.t / (height * height);
 
-  double ret = 0.0;
-  for (int i = 1; true; i++) {
-    double trig_arg = (2*i - 1) * M_PI * y / 2 / height;
-    double exp_c = exp(-(2*i-1) * (2*i-1) * M_PI * M_PI * stime / 4);
-    double sign = i % 2 == 0 ? -1 : 1;
-    double p_fac = 4 / (2.0*i - 1) / M_PI * load;
-
-    double p_add = cos(trig_arg) * exp_c * p_fac * sign;
-    ret += p_add;
-
-    if (fabs(p_add) < 1e-15)
-      break;
+  int i, j;
+  double p_ret = 0.0;
+  double p_add = 1.0;
+  for (i = j = 1; fabs(p_add) > 1.0e-15; i++, j += 2) {
+    double trig_arg = j * M_PI * X.y * 0.5 / height;
+    double exp_c = exp(-j*j * M_PI * M_PI * 0.25 * stime);
+    double p_fac = 4.0 * load / (j * M_PI);
+    p_add = cos(trig_arg) * exp_c * p_fac;
+    p_ret += i%2 ? p_add : -p_add;
   }
 
-  return ret;
+  return p_ret;
 }
 
 
 Vec3 StationaryTerzhagiDisplacement::evaluate (const Vec3& X) const
 {
-  double y = X.y;
-
   double E = myMat->getStiffness(X);
   double nu = myMat->getPoisson(X);
-  double c = -load/E * (1+nu) * (1-2*nu) / (1-nu);
+  double c = -load/E * (1.0+nu) * (1.0-2.0*nu) / (1.0-nu);
 
-  return Vec3(0, c*y, 0);
+  return Vec3(0.0, c*X.y, 0.0);
 }

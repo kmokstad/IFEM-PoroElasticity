@@ -16,7 +16,6 @@
 
 #include "MaterialBase.h"
 #include "Function.h"
-#include "Vec3.h"
 
 class TiXmlElement;
 
@@ -28,7 +27,7 @@ class TiXmlElement;
 class PoroMaterial : public Material
 {
 public:
-  // \brief Helper template for wrapping a constant/function pair.
+  //! \brief Helper template for wrapping a constant/function pair.
   template<class Function> struct FuncConstPair
   {
     Function* function;                 //!< Function definition
@@ -52,7 +51,7 @@ public:
   //! \brief Empty destructor.
   virtual ~PoroMaterial() {}
 
-  //! \brief Parses material parementers from an XML element.
+  //! \brief Parses material parameters from an XML element.
   virtual void parse(const TiXmlElement* elem);
 
   //! \brief Prints out material parameters to the log stream.

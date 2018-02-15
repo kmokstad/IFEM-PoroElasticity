@@ -19,12 +19,16 @@
 class PoroMaterial;
 
 
+/*!
+  \brief Analytic pressure solution for the Terzhagi problem.
+*/
+
 class TerzhagiPressure : public RealFunc
 {
 public:
   //! \brief The constructor initializes the data members.
-  TerzhagiPressure(const PoroMaterial* mat, double g, double h, double l)
-    : myMat(mat), gacc(g), height(h), load(l) {}
+  TerzhagiPressure(PoroMaterial* m, double g, double h, double l)
+    : myMat(m), gacc(g), height(h), load(l) {}
   //! \brief Empty destructor.
   virtual ~TerzhagiPressure() {}
 
@@ -33,18 +37,24 @@ protected:
   virtual double evaluate(const Vec3& X) const;
 
 private:
-  const PoroMaterial* myMat; //!< Pointer to material parameters object
-  double gacc, height, load;
+  PoroMaterial* myMat;  //!< Pointer to material parameters object
+  double        gacc;   //!< Gravitation constant
+  double        height; //!< Domain height
+  double        load;   //!< Load factor
 };
 
+
+/*!
+  \brief Analytic displacement solution for the Terzhagi problem.
+*/
 
 class StationaryTerzhagiDisplacement : public VecFunc
 {
 public:
   //! \brief The constructor initializes the data members.
-  StationaryTerzhagiDisplacement(const PoroMaterial* mat, double l)
-    : myMat(mat), load(l) {}
-  //! \brief Empty destructor
+  StationaryTerzhagiDisplacement(PoroMaterial* m, double l)
+    : myMat(m), load(l) {}
+  //! \brief Empty destructor.
   virtual ~StationaryTerzhagiDisplacement() {}
 
 protected:
@@ -52,8 +62,8 @@ protected:
   virtual Vec3 evaluate(const Vec3& X) const;
 
 private:
-  const PoroMaterial* myMat; //!< Pointer to material parameters object
-  double load;
+  PoroMaterial* myMat; //!< Pointer to material parameters object
+  double        load;  //!< Load factor
 };
 
 #endif

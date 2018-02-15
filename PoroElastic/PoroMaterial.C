@@ -21,25 +21,37 @@
 #include "tinyxml.h"
 
 
+/*!
+  \brief Parses an XML element. Specialization for RealFunc.
+*/
+
 template<>
-RealFunc* PoroMaterial::FuncConstPair<RealFunc>::parse(const char* val,
-                                                       const std::string& type)
+RealFunc* PoroMaterial::FuncConstPair<RealFunc>::parse (const char* val,
+                                                        const std::string& type)
 {
   return utl::parseRealFunc(val, type);
 }
 
 
+/*!
+  \brief Parses an XML element. Specialization for ScalarFunc.
+*/
+
 template<>
-ScalarFunc* PoroMaterial::FuncConstPair<ScalarFunc>::parse(const char* val,
-                                                           const std::string& type)
+ScalarFunc* PoroMaterial::FuncConstPair<ScalarFunc>::parse (const char* val,
+                                                            const std::string& type)
 {
   return utl::parseTimeFunc(val, type);
 }
 
 
+/*!
+  \brief Parses an XML element. Specialization for VecFunc.
+*/
+
 template<>
-VecFunc* PoroMaterial::FuncConstPair<VecFunc>::parse(const char* val,
-                                                     const std::string& type)
+VecFunc* PoroMaterial::FuncConstPair<VecFunc>::parse (const char* val,
+                                                      const std::string& type)
 {
   return utl::parseVecFunc(val, type);
 }
@@ -50,9 +62,9 @@ VecFunc* PoroMaterial::FuncConstPair<VecFunc>::parse(const char* val,
 */
 
 template<class T>
-static bool propertyParse(PoroMaterial::FuncConstPair<T>& data,
-                          const TiXmlElement* elem,
-                          const char* attr, const char* tag)
+static bool propertyParse (PoroMaterial::FuncConstPair<T>& data,
+                           const TiXmlElement* elem,
+                           const char* attr, const char* tag)
 {
   if (utl::getAttribute(elem,attr,data.constant))
     return true;
@@ -128,56 +140,56 @@ double PoroMaterial::getHeatCapacity (double T) const
 }
 
 
-double PoroMaterial::getThermalConductivity(double T) const
+double PoroMaterial::getThermalConductivity (double T) const
 {
   return conductivity.evaluate(T);
 }
 
 
-double PoroMaterial::getPorosity(const Vec3& X) const
+double PoroMaterial::getPorosity (const Vec3& X) const
 {
   return porosity.evaluate(X);
 }
 
 
-Vec3 PoroMaterial::getPermeability(const Vec3& X) const
+Vec3 PoroMaterial::getPermeability (const Vec3& X) const
 {
   return permeability.evaluate(X);
 }
 
 
-double PoroMaterial::getFluidDensity(const Vec3& X) const
+double PoroMaterial::getFluidDensity (const Vec3& X) const
 {
   return rhof.evaluate(X);
 }
 
 
-double PoroMaterial::getSolidDensity(const Vec3& X) const
+double PoroMaterial::getSolidDensity (const Vec3& X) const
 {
   return rhos.evaluate(X);
 }
 
 
-double PoroMaterial::getMassDensity(const Vec3& X) const
+double PoroMaterial::getMassDensity (const Vec3& X) const
 {
   double poro = porosity.evaluate(X);
   return rhos.evaluate(X)*(1.0-poro) + rhof.evaluate(X)*poro;
 }
 
 
-double PoroMaterial::getBulkFluid(const Vec3& X) const
+double PoroMaterial::getBulkFluid (const Vec3& X) const
 {
   return bulkf.evaluate(X);
 }
 
 
-double PoroMaterial::getBulkSolid(const Vec3& X) const
+double PoroMaterial::getBulkSolid (const Vec3& X) const
 {
   return bulks.evaluate(X);
 }
 
 
-double PoroMaterial::getBulkMedium(const Vec3& X) const
+double PoroMaterial::getBulkMedium (const Vec3& X) const
 {
   return bulkm.evaluate(X);
 }
@@ -201,13 +213,13 @@ double PoroMaterial::getBiotModulus (const Vec3& X, double al, double po) const
 }
 
 
-double PoroMaterial::getStiffness(const Vec3& X) const
+double PoroMaterial::getStiffness (const Vec3& X) const
 {
   return Emod.evaluate(X);
 }
 
 
-double PoroMaterial::getPoisson(const Vec3& X) const
+double PoroMaterial::getPoisson (const Vec3& X) const
 {
   return nu.evaluate(X);
 }

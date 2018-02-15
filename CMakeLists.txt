@@ -15,23 +15,22 @@ if(NOT IFEM_CONFIGURED)
   set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} ${IFEM_CXX_FLAGS}")
 endif()
 
-include_directories(${IFEM_INCLUDES} ../Common ${PROJECT_SOURCE_DIR}
-                    ${PROJECT_SOURCE_DIR}/PoroElastic)
-
-set(EXECUTABLE_OUTPUT_PATH ${CMAKE_BINARY_DIR}/bin)
-
 set(ELASTICITY_DIR ${PROJECT_SOURCE_DIR}/../IFEM-Elasticity)
 if(NOT EXISTS ${ELASTICITY_DIR})
   set(ELASTICITY_DIR ${PROJECT_SOURCE_DIR}/../Elasticity)
 endif()
 
+include_directories(${IFEM_INCLUDES} ../Common ${PROJECT_SOURCE_DIR}
+                    ${ELASTICITY_DIR} ${PROJECT_SOURCE_DIR}/PoroElastic)
+
+set(EXECUTABLE_OUTPUT_PATH ${CMAKE_BINARY_DIR}/bin)
+
 if(NOT TARGET Elasticity)
   add_subdirectory(${ELASTICITY_DIR} Elasticity)
 endif()
-include_directories(${ELASTICITY_DIR})
 
 if(NOT TARGET PoroElastic)
-  add_subdirectory(PoroElastic PoroElastic)
+  add_subdirectory(PoroElastic)
 endif()
 
 add_executable(PoroElasticity main.C)
@@ -47,7 +46,7 @@ install(TARGETS PoroElasticity DESTINATION bin COMPONENT bin)
 set(EXTRA_DOXY_PATHS "${PROJECT_SOURCE_DIR} \\
                       ${PROJECT_BINARY_DIR} \\
                       ${PROJECT_SOURCE_DIR}/PoroElastic \\
-                      ${PROJECT_SOURCE_DIR}/../IFEM-Elasticity")
+                      ${ELASTICITY_DIR}")
 add_doc_target(PoroElasticity PoroElasticity)
 
 # Testing

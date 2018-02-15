@@ -295,7 +295,7 @@ public:
                               LocalIntegral&) { return true; }
 
   using Elasticity::evalIntMx;
-  //! \brief Evaluates the integrand at an interior point
+  //! \brief Evaluates the integrand at an interior point.
   //! \param elmInt The local integral object to receive the contributions
   //! \param[in] fe Finite element data of current integration point
   //! \param[in] time Parameters for nonlinear and time-dependent simulations
@@ -304,7 +304,7 @@ public:
                          const TimeDomain& time, const Vec3& X) const;
 
   using Elasticity::evalInt;
-  //! \brief Evaluates the integrand at an interior point
+  //! \brief Evaluates the integrand at an interior point.
   //! \param elmInt The local integral object to receive the contributions
   //! \param[in] fe Finite element data of current integration point
   //! \param[in] time Parameters for nonlinear and time-dependent simulations
@@ -359,16 +359,15 @@ public:
   //! \brief Returns the name of a primary solution field component
   //! \param[in] i Field component index
   //! \param[in] prefix Name prefix for all components
-  virtual std::string getField1Name(size_t i, const char* prefix = 0) const;
+  virtual std::string getField1Name(size_t i, const char* prefix) const;
 
-  //! \brief Returns the name of a secondary solution field component
+  //! \brief Returns the name of a secondary solution field component.
   //! \param[in] i Field component index
   //! \param[in] prefix Name prefix for all components
-  virtual std::string getField2Name(size_t i, const char* prefix = 0) const;
+  virtual std::string getField2Name(size_t i, const char* prefix) const;
 
 private:
-  //! \brief Evaluates the secondary solution at a result point
-  //! (shared code between mixed and non-mixed)
+  //! \brief Evaluates the secondary solution at a result point.
   //! \param[out] s The solution field values at current point
   //! \param[in] fe Finite element data at current point
   //! \param[in] X Cartesian coordinates of current point
@@ -394,7 +393,7 @@ private:
 
 protected:
   //! \brief Computes the elasticity matrices for a quadrature point.
-  //! \param elmInt The element matrix object to receive the contributions
+  //! \param elMat The element matrix object to receive the contributions
   //! \param[in] B Strain-displacement matrix of current integration point
   //! \param[in] fe Finite element data of current integration point
   //! \param[in] X Cartesian coordinates of current integration point
@@ -407,7 +406,7 @@ protected:
   //! \param[in] eV Element solution vectors
   //! \param[in] fe Finite element data of current integration point
   //! \param[in] X Cartesian coordinates of current integration point
-  virtual bool formPermeabilityTensor(SymmTensor& Kperm,
+  virtual bool formPermeabilityTensor(SymmTensor& K,
                                       const Vectors& eV,
                                       const FiniteElement& fe,
                                       const Vec3& X) const;
@@ -418,7 +417,7 @@ private:
   bool calculateEnergy; //!< If \e true, perform energy norm calculation
   bool useDynCoupling;  //!< If \e true, include the dynamic coupling matrix
 
-  RealFunc *volumeFlux; //!< Applied volumetric flux
+  RealFunc* volumeFlux; //!< Applied volumetric flux
 
   friend class PoroNorm;
 };

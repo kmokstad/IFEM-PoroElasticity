@@ -90,7 +90,7 @@ template<class Dim> int runSimulator (char* infile, char integrator)
 
 
 /*!
-  \brief Main program for NURBS-based poroelasticity solver.
+  \brief Main program for the isogeometric poroelasticity solver.
 */
 
 int main (int argc, char** argv)
@@ -119,7 +119,7 @@ int main (int argc, char** argv)
     else if (!infile)
       infile = argv[i];
     else
-      std::cerr <<"*** Unknown option ignored: "<< argv[i] << std::endl;
+      std::cerr <<"  ** Unknown option ignored: "<< argv[i] << std::endl;
 
   if (!infile)
   {
@@ -131,7 +131,7 @@ int main (int argc, char** argv)
     return 0;
   }
 
-  IFEM::cout <<"\n Input file: "<< infile;
+  IFEM::cout <<"\nInput file: "<< infile;
   IFEM::getOptions().print(IFEM::cout) << std::endl;
 
   if (twoD)
