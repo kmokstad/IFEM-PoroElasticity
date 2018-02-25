@@ -32,9 +32,9 @@ template<> bool SIMPoroEl2D::parseDimSpecific (const TiXmlElement* child)
     utl::getAttribute(child,"load",load);
     IFEM::cout <<"\tAnalytical solution: Terzhagi, height = "<< height
                <<" load = "<< load << std::endl;
-    PoroMaterial* pmat = static_cast<PoroMaterial*>
-      (this->getIntegrand()->getMaterial());
-    double gacc = this->getIntegrand()->getGravity().length();
+    Elasticity* elp = this->getIntegrand();
+    PoroMaterial* pmat = static_cast<PoroMaterial*>(elp->getMaterial());
+    double gacc = elp->getGravity().length();
     SIM2D::mySol = new AnaSol(new TerzhagiPressure(pmat,gacc,height,load));
   }
   else if (type == "terzhagi-stationary")
@@ -43,8 +43,8 @@ template<> bool SIMPoroEl2D::parseDimSpecific (const TiXmlElement* child)
     utl::getAttribute(child,"load",load);
     IFEM::cout <<"\tAnalytical solution: Terzhagi (stationary),"
                <<" load = "<< load << std::endl;
-    PoroMaterial* pmat = static_cast<PoroMaterial*>
-      (this->getIntegrand()->getMaterial());
+    Elasticity* elp = this->getIntegrand();
+    PoroMaterial* pmat = static_cast<PoroMaterial*>(elp->getMaterial());
     SIM2D::mySol = new AnaSol(new ConstFunc(0.0), nullptr,
                               new StationaryTerzhagiDisplacement(pmat,load));
   }

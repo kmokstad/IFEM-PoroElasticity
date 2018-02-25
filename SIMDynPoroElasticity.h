@@ -30,7 +30,7 @@ public:
   SIMDynPoroElasticity() : dSim(*this) {}
 
   //! \brief Constructor for mixed problems.
-  SIMDynPoroElasticity(const std::vector<unsigned char>& flds)
+  explicit SIMDynPoroElasticity(const std::vector<unsigned char>& flds)
     : SIMPoroElasticity<Dim>(flds), dSim(*this) {}
 
   //! \brief Empty destructor.
@@ -67,13 +67,25 @@ public:
     if (dSim.solveStep(tp) != SIM::CONVERGED)
       return false;
 
-    this->printSolutionSummary(dSim.getSolution());
+    if (this->getNoFields(2) > 0)
+    {
+      // Calculate and print the pressure norms in case of mixed problem.
+      // The solution norms involving displacement variables
+      // are printed by the dynamic solution driver.
+      size_t iMax = 0;
+      double pMax = 0.0;
+      double pNorm = this->solutionNorms(dSim.getSolution(),&pMax,&iMax,
+                                         this->getNoFields(2),'P');
+      IFEM::cout <<"  Pressure L2-norm                : "<< pNorm
+                 <<"\n               Max pressure       : "<< pMax
+                 <<" node "<< iMax << std::endl;
+    }
 
     return this->postSolve(tp);
   }
 
   //! \brief Solves the linearized system of current iteration.
-  SIM::ConvStatus solveIteration(TimeStep& tp) { return dSim.solveIteration(tp); }
+  SIM::ConvStatus solveIteration(TimeStep& p) { return dSim.solveIteration(p); }
 
   //! \brief Returns the maximum number of iterations.
   int getMaxit() const { return dSim.getMaxit(); }

@@ -131,9 +131,9 @@ public:
     this->setQuadratureRule(Dim::opt.nGauss[1]);
     bool ok = this->solutionNorms(tp.time,solution,gNorms);
     if (ok && !gNorms.empty())
-      for (size_t i = 1; i < gNorms.front().size(); i++)
+      for (size_t i = 1; i <= gNorms.front().size(); i++)
         if (utl::trunc(gNorms.front()(i)) != 0.0)
-          IFEM::cout << utl::adjustRight(36,norm->getName(1,i))
+          IFEM::cout << utl::adjustRight(33,norm->getName(1,i))
                      << gNorms.front()(i) << std::endl;
 
     delete norm;

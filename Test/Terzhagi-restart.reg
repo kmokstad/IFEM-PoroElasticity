@@ -1,6 +1,6 @@
 Terzhagi.xinp -2D -mixed -dyn
 
-file: Terzhagi.xinp
+Input file: Terzhagi.xinp
 Equation solver: 2
 Number of Gauss points: 4
 0. Parsing input file(s).
@@ -26,10 +26,14 @@ Parsing <boundaryconditions>
   Parsing <neumann>
 	Neumann code 1000000 direction 2: -1
 Parsing <poroelasticity>
+  Parsing <isotropic>
 	Material code 0: Poroelastic material, see "Problem definition:" below.
 	Scaling: sc = 1
+	Analytical solution: Terzhagi (stationary), load = 1
 Parsing <timestepping>
 Parsing <newmarksolver>
+Parsing <postprocessing>
+  Parsing <restartstride>
 Parsing input file succeeded.
 Equation solver: 2
 Number of Gauss points: 4
@@ -40,11 +44,12 @@ Parsing <boundaryconditions>
 Parsing <poroelasticity>
 Parsing <timestepping>
 Parsing <newmarksolver>
+Parsing <postprocessing>
 Parsing input file succeeded.
 10. Preprocessing the finite element model:
 11. Poroelasticity solver
 Problem definition:
-PoroElasticity: scaling = 1
+PoroElasticity: scaling = 1 useDynCoupling = true
 Elasticity: 2D, gravity = 0 9.81
 	Constitutive Properties:
 		Young's Modulus, E = 1
@@ -80,10 +85,12 @@ Number of unknowns    260
                Max Y-velocity     : 0.178573
   Acceleration L2-norm            : 1.15775
                Max Y-acceleration : 6.11246
-  Primary solution summary: L2-norm            : 0.0851587
-                   Pressure L2-norm            : 0.571523
-                            Max Y-displacement : 0.24506
-                            Max pressure       : 0.870583
+  Pressure L2-norm                : 0.571523
+               Max pressure       : 0.870583
+                         |u^h|_l2 : 0.114346
+                         |p^h|_l2 : 0.56901
+                       |u-u^h|_l2 : 0.158388
+                       |p-p^h|_l2 : 0.56901
   step=7  time=1.4
   Displacement L2-norm            : 0.0971309
                Max Y-displacement : 0.268774
@@ -91,10 +98,12 @@ Number of unknowns    260
                Max Y-velocity     : 0.167582
   Acceleration L2-norm            : 1.28459
                Max Y-acceleration : 6.33945
-  Primary solution summary: L2-norm            : 0.0971309
-                   Pressure L2-norm            : 0.50556
-                            Max Y-displacement : 0.268774
-                            Max pressure       : 0.738525
+  Pressure L2-norm                : 0.50556
+               Max pressure       : 0.738525
+                         |u^h|_l2 : 0.131411
+                         |p^h|_l2 : 0.504462
+                       |u-u^h|_l2 : 0.140123
+                       |p-p^h|_l2 : 0.504462
   step=8  time=1.6
   Displacement L2-norm            : 0.108057
                Max Y-displacement : 0.290607
@@ -102,10 +111,12 @@ Number of unknowns    260
                Max Y-velocity     : 0.140695
   Acceleration L2-norm            : 1.41146
                Max Y-acceleration : 6.7546
-  Primary solution summary: L2-norm            : 0.108057
-                   Pressure L2-norm            : 0.446312
-                            Max Y-displacement : 0.290607
-                            Max pressure       : 0.604285
+  Pressure L2-norm                : 0.446312
+               Max pressure       : 0.604285
+                         |u^h|_l2 : 0.14701
+                         |p^h|_l2 : 0.446926
+                       |u-u^h|_l2 : 0.123912
+                       |p-p^h|_l2 : 0.446926
   step=9  time=1.8
   Displacement L2-norm            : 0.117973
                Max Y-displacement : 0.310375
@@ -113,10 +124,12 @@ Number of unknowns    260
                Max Y-velocity     : 0.128371
   Acceleration L2-norm            : 1.51196
                Max Y-acceleration : 6.96333
-  Primary solution summary: L2-norm            : 0.117973
-                   Pressure L2-norm            : 0.39464
-                            Max Y-displacement : 0.310375
-                            Max pressure       : 0.537706
+  Pressure L2-norm                : 0.39464
+               Max pressure       : 0.537706
+                         |u^h|_l2 : 0.161072
+                         |p^h|_l2 : 0.395288
+                       |u-u^h|_l2 : 0.109534
+                       |p-p^h|_l2 : 0.395288
   step=10  time=2
   Displacement L2-norm            : 0.126857
                Max Y-displacement : 0.329153
@@ -124,10 +137,12 @@ Number of unknowns    260
                Max Y-velocity     : 0.127496
   Acceleration L2-norm            : 1.59268
                Max Y-acceleration : 7.27103
-  Primary solution summary: L2-norm            : 0.126857
-                   Pressure L2-norm            : 0.350101
-                            Max Y-displacement : 0.329153
-                            Max pressure       : 0.503313
+  Pressure L2-norm                : 0.350101
+               Max pressure       : 0.503313
+                         |u^h|_l2 : 0.173641
+                         |p^h|_l2 : 0.349579
+                       |u-u^h|_l2 : 0.0968166
+                       |p-p^h|_l2 : 0.349579
   step=11  time=2.2
   Displacement L2-norm            : 0.134759
                Max Y-displacement : 0.345328
@@ -135,10 +150,12 @@ Number of unknowns    260
                Max Y-velocity     : 0.104547
   Acceleration L2-norm            : 1.63376
                Max Y-acceleration : 7.31841
-  Primary solution summary: L2-norm            : 0.134759
-                   Pressure L2-norm            : 0.309563
-                            Max Y-displacement : 0.345328
-                            Max pressure       : 0.449889
+  Pressure L2-norm                : 0.309563
+               Max pressure       : 0.449889
+                         |u^h|_l2 : 0.184783
+                         |p^h|_l2 : 0.308916
+                       |u-u^h|_l2 : 0.0855686
+                       |p-p^h|_l2 : 0.308916
   step=12  time=2.4
   Displacement L2-norm            : 0.141732
                Max Y-displacement : 0.360488
@@ -146,10 +163,12 @@ Number of unknowns    260
                Max Y-velocity     : 0.0857097
   Acceleration L2-norm            : 1.64749
                Max Y-acceleration : 7.46724
-  Primary solution summary: L2-norm            : 0.141732
-                   Pressure L2-norm            : 0.272952
-                            Max Y-displacement : 0.360488
-                            Max pressure       : 0.378693
+  Pressure L2-norm                : 0.272952
+               Max pressure       : 0.378693
+                         |u^h|_l2 : 0.194612
+                         |p^h|_l2 : 0.273152
+                       |u-u^h|_l2 : 0.0756293
+                       |p-p^h|_l2 : 0.273152
   step=13  time=2.6
   Displacement L2-norm            : 0.147836
                Max Y-displacement : 0.372284
@@ -157,10 +176,12 @@ Number of unknowns    260
                Max Y-velocity     : 0.0863977
   Acceleration L2-norm            : 1.61611
                Max Y-acceleration : 7.2796
-  Primary solution summary: L2-norm            : 0.147836
-                   Pressure L2-norm            : 0.241403
-                            Max Y-displacement : 0.372284
-                            Max pressure       : 0.338769
+  Pressure L2-norm                : 0.241403
+               Max pressure       : 0.338769
+                         |u^h|_l2 : 0.203267
+                         |p^h|_l2 : 0.24135
+                       |u-u^h|_l2 : 0.0668412
+                       |p-p^h|_l2 : 0.24135
   step=14  time=2.8
   Displacement L2-norm            : 0.153227
                Max Y-displacement : 0.383548
@@ -168,10 +189,12 @@ Number of unknowns    260
                Max Y-velocity     : 0.0730209
   Acceleration L2-norm            : 1.5554
                Max Y-acceleration : 7.14508
-  Primary solution summary: L2-norm            : 0.153227
-                   Pressure L2-norm            : 0.214089
-                            Max Y-displacement : 0.383548
-                            Max pressure       : 0.316693
+  Pressure L2-norm                : 0.214089
+               Max pressure       : 0.316693
+                         |u^h|_l2 : 0.210909
+                         |p^h|_l2 : 0.213404
+                       |u-u^h|_l2 : 0.0590751
+                       |p-p^h|_l2 : 0.213404
   step=15  time=3
   Displacement L2-norm            : 0.157977
                Max Y-displacement : 0.392226
@@ -179,10 +202,12 @@ Number of unknowns    260
                Max Y-velocity     : 0.0728331
   Acceleration L2-norm            : 1.45616
                Max Y-acceleration : 6.75193
-  Primary solution summary: L2-norm            : 0.157977
-                   Pressure L2-norm            : 0.18865
-                            Max Y-displacement : 0.392226
-                            Max pressure       : 0.26371
+  Pressure L2-norm                : 0.18865
+               Max pressure       : 0.26371
+                         |u^h|_l2 : 0.217678
+                         |p^h|_l2 : 0.188566
+                       |u-u^h|_l2 : 0.0522113
+                       |p-p^h|_l2 : 0.188566
   step=16  time=3.2
   Displacement L2-norm            : 0.16224
                Max Y-displacement : 0.401604
@@ -190,10 +215,12 @@ Number of unknowns    260
                Max Y-velocity     : 0.0700468
   Acceleration L2-norm            : 1.32786
                Max Y-acceleration : 6.28879
-  Primary solution summary: L2-norm            : 0.16224
-                   Pressure L2-norm            : 0.166554
-                            Max Y-displacement : 0.401604
-                            Max pressure       : 0.235878
+  Pressure L2-norm                : 0.166554
+               Max pressure       : 0.235878
+                         |u^h|_l2 : 0.223683
+                         |p^h|_l2 : 0.166693
+                       |u-u^h|_l2 : 0.0461442
+                       |p-p^h|_l2 : 0.166693
   step=17  time=3.4
   Displacement L2-norm            : 0.165991
                Max Y-displacement : 0.408757
@@ -201,10 +228,12 @@ Number of unknowns    260
                Max Y-velocity     : 0.0733491
   Acceleration L2-norm            : 1.17043
                Max Y-acceleration : 5.60313
-  Primary solution summary: L2-norm            : 0.165991
-                   Pressure L2-norm            : 0.147811
-                            Max Y-displacement : 0.408757
-                            Max pressure       : 0.217699
+  Pressure L2-norm                : 0.147811
+               Max pressure       : 0.217699
+                         |u^h|_l2 : 0.228998
+                         |p^h|_l2 : 0.147353
+                       |u-u^h|_l2 : 0.0407832
+                       |p-p^h|_l2 : 0.147353
   step=18  time=3.6
   Displacement L2-norm            : 0.169323
                Max Y-displacement : 0.416096
@@ -212,10 +241,11 @@ Number of unknowns    260
                Max Y-velocity     : 0.0719123
   Acceleration L2-norm            : 0.995274
                Max Y-acceleration : 4.89883
-  Primary solution summary: L2-norm            : 0.169323
-                   Pressure L2-norm            : 0.130332
-                            Max Y-displacement : 0.416096
-                            Max pressure       : 0.183045
+  Pressure L2-norm                : 0.130332
+               Max pressure       : 0.183045
+                         |u^h|_l2 : 0.23369
+                         |p^h|_l2 : 0.130232
+                       |u-u^h|_l2 : 0.0360443
   step=19  time=3.8
   Displacement L2-norm            : 0.172227
                Max Y-displacement : 0.421276
@@ -223,10 +253,12 @@ Number of unknowns    260
                Max Y-velocity     : 0.0694218
   Acceleration L2-norm            : 0.800594
                Max Y-acceleration : 3.97856
-  Primary solution summary: L2-norm            : 0.172227
-                   Pressure L2-norm            : 0.114967
-                            Max Y-displacement : 0.421276
-                            Max pressure       : 0.165716
+  Pressure L2-norm                : 0.114967
+               Max pressure       : 0.165716
+                         |u^h|_l2 : 0.237836
+                         |p^h|_l2 : 0.115108
+                       |u-u^h|_l2 : 0.0318561
+                       |p-p^h|_l2 : 0.115108
   step=20  time=4
   Displacement L2-norm            : 0.174833
                Max Y-displacement : 0.426978
@@ -234,10 +266,12 @@ Number of unknowns    260
                Max Y-velocity     : 0.0771414
   Acceleration L2-norm            : 0.603115
                Max Y-acceleration : 3.006
-  Primary solution summary: L2-norm            : 0.174833
-                   Pressure L2-norm            : 0.102225
-                            Max Y-displacement : 0.426978
-                            Max pressure       : 0.152667
+  Pressure L2-norm                : 0.102225
+               Max pressure       : 0.152667
+                         |u^h|_l2 : 0.241504
+                         |p^h|_l2 : 0.101807
+                       |u-u^h|_l2 : 0.0281551
+                       |p-p^h|_l2 : 0.101807
   step=21  time=4.2
   Displacement L2-norm            : 0.177123
                Max Y-displacement : 0.431418
@@ -245,10 +279,12 @@ Number of unknowns    260
                Max Y-velocity     : 0.0677443
   Acceleration L2-norm            : 0.411655
                Max Y-acceleration : 1.90716
-  Primary solution summary: L2-norm            : 0.177123
-                   Pressure L2-norm            : 0.0900537
-                            Max Y-displacement : 0.431418
-                            Max pressure       : 0.126154
+  Pressure L2-norm                : 0.0900537
+               Max pressure       : 0.126154
+                         |u^h|_l2 : 0.244749
+                         |p^h|_l2 : 0.0899593
+                       |u-u^h|_l2 : 0.0248836
+                       |p-p^h|_l2 : 0.0899593
   step=22  time=4.4
   Displacement L2-norm            : 0.179154
                Max Y-displacement : 0.435709
@@ -256,10 +292,12 @@ Number of unknowns    260
                Max Y-velocity     : 0.0756451
   Acceleration L2-norm            : 0.276645
                Max Y-acceleration : 0.991303
-  Primary solution summary: L2-norm            : 0.179154
-                   Pressure L2-norm            : 0.079461
-                            Max Y-displacement : 0.435709
-                            Max pressure       : 0.115488
+  Pressure L2-norm                : 0.079461
+               Max pressure       : 0.115488
+                         |u^h|_l2 : 0.247613
+                         |p^h|_l2 : 0.0795376
+                       |u-u^h|_l2 : 0.0219921
+                       |p-p^h|_l2 : 0.0795376
   step=23  time=4.6
   Displacement L2-norm            : 0.180931
                Max Y-displacement : 0.439089
@@ -267,10 +305,12 @@ Number of unknowns    260
                Max Y-velocity     : 0.0616895
   Acceleration L2-norm            : 0.295124
                Max Y-acceleration : 0.880061
-  Primary solution summary: L2-norm            : 0.180931
-                   Pressure L2-norm            : 0.0707883
-                            Max Y-displacement : 0.439089
-                            Max pressure       : 0.107294
+  Pressure L2-norm                : 0.0707883
+               Max pressure       : 0.107294
+                         |u^h|_l2 : 0.250145
+                         |p^h|_l2 : 0.070375
+                       |u-u^h|_l2 : 0.0194372
+                       |p-p^h|_l2 : 0.070375
   step=24  time=4.8
   Displacement L2-norm            : 0.182517
                Max Y-displacement : 0.442285
@@ -278,10 +318,12 @@ Number of unknowns    260
                Max Y-velocity     : 0.0737925
   Acceleration L2-norm            : 0.442046
                Max Y-acceleration : 1.50781
-  Primary solution summary: L2-norm            : 0.182517
-                   Pressure L2-norm            : 0.0622518
-                            Max Y-displacement : 0.442285
-                            Max pressure       : 0.0895922
+  Pressure L2-norm                : 0.0622518
+               Max pressure       : 0.0895922
+                         |u^h|_l2 : 0.252385
+                         |p^h|_l2 : 0.062207
+                       |u-u^h|_l2 : 0.0171788
+                       |p-p^h|_l2 : 0.062207
   step=25  time=5
   Displacement L2-norm            : 0.183925
                Max Y-displacement : 0.445395
@@ -289,8 +331,10 @@ Number of unknowns    260
                Max Y-velocity     : 0.0554093
   Acceleration L2-norm            : 0.62506
                Max Y-acceleration : 2.67269
-  Primary solution summary: L2-norm            : 0.183925
-                   Pressure L2-norm            : 0.0550602
-                            Max Y-displacement : 0.445395
-                            Max pressure       : 0.0790546
+  Pressure L2-norm                : 0.0550602
+               Max pressure       : 0.0790546
+                         |u^h|_l2 : 0.254366
+                         |p^h|_l2 : 0.0549981
+                       |u-u^h|_l2 : 0.0151826
+                       |p-p^h|_l2 : 0.0549981
   Time integration completed.
