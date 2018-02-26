@@ -20,6 +20,7 @@
 #include "Functions.h"
 #include "AnaSol.h"
 #include "Tensor.h"
+#include "Vec3Oper.h"
 #include "IFEM.h"
 #include "tinyxml.h"
 
@@ -391,6 +392,7 @@ size_t PoroElasticity::getNoFields (int fld) const
 {
   if (fld < 2)
     return nsd+1;
+
   return nsd * (nsd + 1);
 }
 
@@ -409,6 +411,7 @@ std::string PoroElasticity::getField1Name (size_t i, const char* prefix) const
 
   if (!prefix)
     return s[i];
+
   return prefix + std::string(" ") + s[i];
 }
 
@@ -499,9 +502,9 @@ NormBase* PoroElasticity::getNormIntegrand (AnaSol* sol) const
 }
 
 
-PoroNorm::PoroNorm(PoroElasticity& poroel,
-                   VecFunc* disp, TensorFunc* /*d_disp*/,
-                   RealFunc* press, VecFunc* /*d_press*/) : NormBase(poroel)
+PoroNorm::PoroNorm (PoroElasticity& poroel,
+                    VecFunc* disp, TensorFunc* /*d_disp*/,
+                    RealFunc* press, VecFunc* /*d_press*/) : NormBase(poroel)
 {
   nrcmp = 2;
   displacement = disp;
@@ -511,7 +514,7 @@ PoroNorm::PoroNorm(PoroElasticity& poroel,
 }
 
 
-size_t PoroNorm::getNoFields(int group) const
+size_t PoroNorm::getNoFields (int group) const
 {
   // FIXME: Projected solutions
   if (group == 0)
@@ -524,17 +527,14 @@ size_t PoroNorm::getNoFields(int group) const
 }
 
 
-std::string PoroNorm::getName(size_t i, size_t j, const char* prefix) const
+std::string PoroNorm::getName (size_t i, size_t j, const char* prefix) const
 {
   if (i == 0 || j == 0 || j > 4)
     return this->NormBase::getName(i, j, prefix);
 
   static const char* s[6] = {
-    // Group 1: regular norms
     "|u^h|_l2",
     "|p^h|_l2",
-
-    // Group 1: error norms
     "|u-u^h|_l2",
     "|p-p^h|_l2",
   };
@@ -545,60 +545,57 @@ std::string PoroNorm::getName(size_t i, size_t j, const char* prefix) const
   if (!prefix)
     return s[j-1];
 
-  static std::string name;
-  name = prefix + std::string(" ") + s[j-1];
-  return name.c_str();
+  return prefix + std::string(" ") + s[j-1];
 }
 
 
-bool PoroNorm::evalIntMx(LocalIntegral& elmInt, const MxFiniteElement& fe,
-                         const TimeDomain& time, const Vec3& X) const
+bool PoroNorm::evalIntMx (LocalIntegral& elmInt, const MxFiniteElement& fe,
+                          const TimeDomain& time, const Vec3& X) const
 {
   return this->evalInt(elmInt, fe, time, X);
 }
 
 
-bool PoroNorm::evalInt(LocalIntegral& elmInt, const FiniteElement& fe,
-                       const TimeDomain& time, const Vec3& X) const
+bool PoroNorm::evalInt (LocalIntegral& elmInt, const FiniteElement& fe,
+                        const TimeDomain& time, const Vec3& X) const
 {
   ElmNorm& norms = static_cast<ElmNorm&>(elmInt);
   size_t nsd = fe.grad(1).cols();
-  size_t nbfu = fe.basis(1).size();
 
-  Vector& eU = norms.vec[PoroElasticity::Vu];
-  Vector& eP = norms.vec[PoroElasticity::Vp];
-
-  // Numerical displacement
-  Vector disp_h(nsd);
-  for (size_t i = 1; i <= nbfu; i++)
-    for (size_t j = 1; j <= nsd; j++)
-      disp_h(j) += eU(nsd*(i-1) + j) * fe.basis(1)(i);
-
-  // Numerical pressure
-  double press_h = eP.dot(fe.basis(2));
+  // Numerical displacement and pressure
+  Vec3   disp_h;
+  double press_h;
+  if (fe.getNoBasis() == 1)
+  {
+    for (size_t i = 0; i < nsd; i++)
+      disp_h[i] = norms.vec[PoroElasticity::Vu].dot(fe.N,i,nsd+1);
+    press_h = norms.vec[PoroElasticity::Vp].dot(fe.N,nsd,nsd+1);
+  }
+  else
+  {
+    for (size_t i = 0; i < nsd; i++)
+      disp_h[i] = norms.vec[PoroElasticity::Vu].dot(fe.basis(1),i,nsd);
+    press_h = norms.vec[PoroElasticity::Vp].dot(fe.basis(2));
+  }
 
   // Norm index counter
   size_t np = 0;
 
   // Displacement L2-norm
-  norms[np++] += disp_h.dot(disp_h) * fe.detJxW;
+  norms[np++] += disp_h * disp_h * fe.detJxW;
 
   // Pressure L2-norm
   norms[np++] += press_h * press_h * fe.detJxW;
 
   // Displacement error L2-norm
   if (displacement) {
-    Vec4 Xt(X, time.t);
-    Vec3 disp_a = (*displacement)(Xt);
-    for (size_t i = 1; i <= nsd; i++)
-      norms[np] += (disp_a(i) - disp_h(i)) * (disp_a(i) - disp_h(i)) * fe.detJxW;
-    np++;
+    Vec3 disp_a = (*displacement)(Vec4(X,time.t));
+    norms[np++] += (disp_a - disp_h) * (disp_a - disp_h) * fe.detJxW;
   }
 
   // Pressure error L2-norm
   if (pressure) {
-    Vec4 Xt(X, time.t);
-    double press_a = (*pressure)(Xt);
+    double press_a = (*pressure)(Vec4(X,time.t));
     norms[np++] += (press_a - press_h) * (press_a - press_h) * fe.detJxW;
   }
 
