@@ -179,7 +179,7 @@ protected:
   virtual Elasticity* getIntegrand()
   {
     if (!Dim::myProblem)
-      Dim::myProblem = new PoroElasticity(Dim::dimension);
+      Dim::myProblem = new PoroElasticity(Dim::dimension, Dim::nf.size() > 1);
     return static_cast<Elasticity*>(Dim::myProblem);
   }
 

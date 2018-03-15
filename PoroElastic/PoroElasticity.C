@@ -25,12 +25,15 @@
 #include "tinyxml.h"
 
 
-PoroElasticity::PoroElasticity (unsigned short int n)
-  : Elasticity(n), volumeFlux(nullptr)
+PoroElasticity::PoroElasticity (unsigned short int n, bool mix) : Elasticity(n)
 {
-  sc = 0.0;
   gravity[n-1] = 9.81; // Default gravity acceleration
+  npv = mix ? 0 : nsd+1; // Number of primary unknowns per node (non-mixed only)
+
+  sc = 0.0;
   calculateEnergy = useDynCoupling = false;
+
+  volumeFlux = nullptr;
 }
 
 
@@ -40,10 +43,11 @@ bool PoroElasticity::parse (const TiXmlElement* elem)
     calculateEnergy = true;
   else if (!strncasecmp(elem->Value(),"useDynC",7))
     useDynCoupling = true;
-  else if (!strncasecmp(elem->Value(),"volumeflux",10)) {
+  else if (!strncasecmp(elem->Value(),"volumeflux",10))
+  {
     std::string type;
-    utl::getAttribute(elem, "type", type);
-    volumeFlux = utl::parseRealFunc(elem->GetText(), type);
+    utl::getAttribute(elem,"type",type);
+    volumeFlux = utl::parseRealFunc(elem->GetText(),type);
   }
   else if (strcasecmp(elem->Value(),"scaling"))
     return this->Elasticity::parse(elem);
@@ -139,7 +143,8 @@ bool PoroElasticity::initElement (const std::vector<int>& MNPC,
   ierr += utl::gather(MNPCp, 0, 1, primsol.front(), elmInt.vec[Vp],
                       nsd*basis_sizes.front(), basis_sizes.front());
 
-  if (m_mode == SIM::DYNAMIC) {
+  if (m_mode == SIM::DYNAMIC)
+  {
     // Extract the element level velocity vectors
     ierr += utl::gather(MNPCu, nsd, primsol[1], elmInt.vec[Vuvel]);
     ierr += utl::gather(MNPCp, 0, 1, primsol[1], elmInt.vec[Vpvel],
@@ -168,23 +173,24 @@ bool PoroElasticity::initElement (const std::vector<int>& MNPC,
   if (elmInt.vec.size() < nsol)
     elmInt.vec.resize(nsol);
 
-  Matrix temp(nsd+1, MNPC.size());
+  Matrix temp(npv, MNPC.size());
 
   // Extract the element level solution vectors
-  int ierr = utl::gather(MNPC, nsd+1, primsol.front(), temp);
-  elmInt.vec[Vp] = temp.getRow(nsd+1);
+  int ierr = utl::gather(MNPC, npv, primsol.front(), temp);
+  elmInt.vec[Vp] = temp.getRow(npv);
   elmInt.vec[Vu] = temp.expandRows(-1);
 
   size_t ip = primsol.size();
-  if (m_mode == SIM::DYNAMIC && ip > 2) {
+  if (m_mode == SIM::DYNAMIC && ip > 2)
+  {
     // Extract the element level acceleration vector
-    temp.resize(nsd+1, MNPC.size());
-    ierr += utl::gather(MNPC, nsd+1, primsol[--ip], temp);
+    temp.resize(npv, MNPC.size());
+    ierr += utl::gather(MNPC, npv, primsol[--ip], temp);
     elmInt.vec[Vuacc] = temp.expandRows(-1);
     // Extract the element level velocity vectors
-    temp.resize(nsd+1, MNPC.size());
-    ierr += utl::gather(MNPC, nsd+1, primsol[--ip], temp);
-    elmInt.vec[Vpvel] = temp.getRow(nsd+1);
+    temp.resize(npv, MNPC.size());
+    ierr += utl::gather(MNPC, npv, primsol[--ip], temp);
+    elmInt.vec[Vpvel] = temp.getRow(npv);
     elmInt.vec[Vuvel] = temp.expandRows(-1);
   }
 
@@ -249,13 +255,7 @@ bool PoroElasticity::evalCouplingMatrix (Matrix& mx, const Matrix& B,
 bool PoroElasticity::evalCompressibilityMatrix (Matrix& mx, const Vector& N,
                                                 double scl) const
 {
-  Matrix temp(mx.rows(), mx.cols());
-  if (!temp.outer_product(N,N))
-    return false;
-
-  mx.add(temp,scl);
-
-  return true;
+  return mx.outer_product(N,N,true,scl);
 }
 
 
@@ -307,8 +307,9 @@ bool PoroElasticity::evalInt (LocalIntegral& elmInt,
                               const TimeDomain& time, const Vec3& X) const
 {
   const PoroMaterial* pmat = dynamic_cast<const PoroMaterial*>(material);
-  if (!pmat) {
-    std::cerr << __FUNCTION__ << ": No material data." << std::endl;
+  if (!pmat)
+  {
+    std::cerr <<" *** PoroElasticity::evalInt: No material data."<< std::endl;
     return false;
   }
 
@@ -351,11 +352,8 @@ bool PoroElasticity::evalInt (LocalIntegral& elmInt,
                                        scl*scl*Minv*fe.detJxW))
     return false;
 
-  if (volumeFlux) {
-    double flux = (*volumeFlux)(X);
-    for (size_t i = 1; i <= fe.basis(2).size(); i++)
-      elMat.b[Fp](i) += flux * fe.basis(2)(i) * fe.detJxW;
-  }
+  if (volumeFlux)
+    elMat.b[Fp].add(fe.basis(2),(*volumeFlux)(X)*fe.detJxW);
 
   return true;
 }
@@ -447,12 +445,12 @@ bool PoroElasticity::evalSol (Vector& s, const FiniteElement& fe,
                               const Vec3& X, const std::vector<int>& MNPC) const
 {
   Vector eV;
-  utl::gather(MNPC,nsd+1,primsol.front(),eV);
+  utl::gather(MNPC,npv,primsol.front(),eV);
 
   Vector disp(nsd * fe.N.size());
   for (size_t i = 0; i < nsd; i++)
     for (size_t bfun = 0; bfun < fe.N.size(); bfun++)
-      disp[nsd*bfun+i] = eV[(nsd+1)*bfun+i];
+      disp[nsd*bfun+i] = eV[npv*bfun+i];
 
   return this->evalSolCommon(s,fe,X,disp);
 }
@@ -464,7 +462,7 @@ bool PoroElasticity::evalSolCommon (Vector& s,
 {
   if (!material)
   {
-    std::cerr << __FUNCTION__ <<": No material data."<< std::endl;
+    std::cerr <<" *** PoroElasticity::evalSol: No material data."<< std::endl;
     return false;
   }
 
@@ -588,13 +586,15 @@ bool PoroNorm::evalInt (LocalIntegral& elmInt, const FiniteElement& fe,
   norms[np++] += press_h * press_h * fe.detJxW;
 
   // Displacement error L2-norm
-  if (displacement) {
+  if (displacement)
+  {
     Vec3 disp_a = (*displacement)(Vec4(X,time.t));
     norms[np++] += (disp_a - disp_h) * (disp_a - disp_h) * fe.detJxW;
   }
 
   // Pressure error L2-norm
-  if (pressure) {
+  if (pressure)
+  {
     double press_a = (*pressure)(Vec4(X,time.t));
     norms[np++] += (press_a - press_h) * (press_a - press_h) * fe.detJxW;
   }

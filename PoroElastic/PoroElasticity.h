@@ -81,24 +81,33 @@ protected:
     Mats(size_t ndof_displ, size_t ndof_press, bool neumann, char dynamic);
     //! \brief Empty destructor.
     virtual ~Mats() {}
+
     //! \brief Updates the time step size.
     void setStepSize(double dt) { h = dt; }
     //! \brief Updates the perpendicular crack stretch.
     void setCrackStretch(double cs) { lambda = cs; }
+
     //! \brief Returns the element level Newton matrix.
     virtual const Matrix& getNewtonMatrix() const;
     //! \brief Returns the element level right-hand-side vector.
     virtual const Vector& getRHSVector() const;
+
     //! \brief Adds in a UU-matrix to a system matrix
-    virtual void add_uu(const Matrix& source, Matrix& target, double scale = 1.0) const = 0;
+    virtual void add_uu(const Matrix& source, Matrix& target,
+                        double scl = 1.0) const = 0;
     //! \brief Adds in a UP-matrix to a system matrix
-    virtual void add_up(const Matrix& source, Matrix& target, double scale = 1.0) const = 0;
+    virtual void add_up(const Matrix& source, Matrix& target,
+                        double scl = 1.0) const = 0;
     //! \brief Adds in the transpose of a UP-matrix to a system matrix
-    virtual void add_pu(const Matrix& source, Matrix& target, double scale = 1.0) const = 0;
+    virtual void add_pu(const Matrix& source, Matrix& target,
+                        double scl = 1.0) const = 0;
     //! \brief Adds in a PP-matrix to a system matrix
-    virtual void add_pp(const Matrix& source, Matrix& target, double scale = 1.0) const = 0;
+    virtual void add_pp(const Matrix& source, Matrix& target,
+                        double scl = 1.0) const = 0;
     //! \brief Forms a system vector out of two sub-vectors
-    virtual void form_vector(const Vector &u, const Vector &p, Vector& target) const = 0;
+    virtual void form_vector(const Vector& u, const Vector& p,
+                             Vector& target) const = 0;
+
   protected:
     double h;      //!< Current time step size
     double lambda; //!< Perpendicular crack stretch at current location
@@ -114,16 +123,18 @@ private:
       : Mats(ndof_d, ndof_p, neumann, dyn) {}
     //! \brief Empty destructor.
     virtual ~MixedElmMats() {}
+
     //! \brief Adds in a UU-matrix to a system matrix
-    virtual void add_uu(const Matrix& source, Matrix& target, double scale = 1.0) const;
+    virtual void add_uu(const Matrix& source, Matrix& target, double scl) const;
     //! \brief Adds in a UP-matrix to a system matrix
-    virtual void add_up(const Matrix& source, Matrix& target, double scale = 1.0) const;
+    virtual void add_up(const Matrix& source, Matrix& target, double scl) const;
     //! \brief Adds in the transpose of a UP-matrix to a system matrix
-    virtual void add_pu(const Matrix& source, Matrix& target, double scale = 1.0) const;
+    virtual void add_pu(const Matrix& source, Matrix& target, double scl) const;
     //! \brief Adds in a PP-matrix to a system matrix
-    virtual void add_pp(const Matrix& source, Matrix& target, double scale = 1.0) const;
+    virtual void add_pp(const Matrix& source, Matrix& target, double scl) const;
     //! \brief Forms a system vector out of two sub-vectors
-    virtual void form_vector(const Vector &u, const Vector &p, Vector& target) const;
+    virtual void form_vector(const Vector& u, const Vector& p,
+                             Vector& target) const;
   };
 
   //! \brief Class representing the element matrices for standard formulation.
@@ -135,16 +146,18 @@ private:
       : Mats(ndof_d, ndof_p, neumann, dyn) {}
     //! \brief Empty destructor.
     virtual ~NonMixedElmMats() {}
+
     //! \brief Adds in a UU-matrix to a system matrix
-    virtual void add_uu(const Matrix& source, Matrix& target, double scale = 1.0) const;
+    virtual void add_uu(const Matrix& source, Matrix& target, double scl) const;
     //! \brief Adds in a UP-matrix to a system matrix
-    virtual void add_up(const Matrix& source, Matrix& target, double scale = 1.0) const;
+    virtual void add_up(const Matrix& source, Matrix& target, double scl) const;
     //! \brief Adds in the transpose of a UP-matrix to a system matrix
-    virtual void add_pu(const Matrix& source, Matrix& target, double scale = 1.0) const;
+    virtual void add_pu(const Matrix& source, Matrix& target, double scl) const;
     //! \brief Adds in a PP-matrix to a system matrix
-    virtual void add_pp(const Matrix& source, Matrix& target, double scale = 1.0) const;
+    virtual void add_pp(const Matrix& source, Matrix& target, double scl) const;
     //! \brief Forms a system vector out of two sub-vectors
-    virtual void form_vector(const Vector &u, const Vector &p, Vector& target) const;
+    virtual void form_vector(const Vector& u, const Vector& p,
+                             Vector& target) const;
   };
 
   //! \brief Class representing the element matrices for dynamic problems.
@@ -159,6 +172,7 @@ private:
         beta(fabs(b)), gamma(c), m_damp(m), s_damp(s), slvDisp(b < 0.0) {}
     //! \brief Empty destructor.
     virtual ~NewmarkMats() {}
+
     //! \brief Returns the element-level Newton matrix.
     virtual const Matrix& getNewtonMatrix() const
     {
@@ -186,6 +200,7 @@ private:
 #endif
       return P::A.front();
     }
+
     //! \brief Returns the element-level right-hand-side vector.
     virtual const Vector& getRHSVector() const
     {
@@ -224,6 +239,7 @@ private:
 #endif
       return P::b.front();
     }
+
   protected:
     double beta;   //!< Time integration parameter
     double gamma;  //!< Time integration parameter
@@ -235,7 +251,8 @@ private:
 public:
   //! \brief Default constructor.
   //! \param[in] n Number of spatial dimensions
-  PoroElasticity(unsigned short int n = 3);
+  //! \param[in] mix If \e true, a mixed formulation is used
+  explicit PoroElasticity(unsigned short int n = 3, bool mix = false);
   //! \brief Empty destructor.
   virtual ~PoroElasticity() {}
 
