@@ -87,91 +87,102 @@ const Vector& PoroElasticity::Mats::getRHSVector () const
 }
 
 
-void PoroElasticity::MixedElmMats::add_uu(const Matrix& source, Matrix& target, double scale) const
+void PoroElasticity::MixedElmMats::add_uu (const Matrix& source, Matrix& target,
+                                           double scl) const
 {
-  target.addBlock(source, scale, 1, 1);
+  target.addBlock(source, scl, 1, 1);
 }
 
 
-void PoroElasticity::MixedElmMats::add_up(const Matrix& source, Matrix& target, double scale) const
+void PoroElasticity::MixedElmMats::add_up (const Matrix& source, Matrix& target,
+                                           double scl) const
 {
-  target.addBlock(source, scale, 1, 1 + b[Fu].size());
+  target.addBlock(source, scl, 1, 1 + b[Fu].size());
 }
 
 
-void PoroElasticity::MixedElmMats::add_pu(const Matrix& source, Matrix& target, double scale) const
+void PoroElasticity::MixedElmMats::add_pu (const Matrix& source, Matrix& target,
+                                           double scl) const
 {
-  target.addBlock(source, scale, 1 + b[Fu].size(), 1, true);
+  target.addBlock(source, scl, 1 + b[Fu].size(), 1, true);
 }
 
 
-void PoroElasticity::MixedElmMats::add_pp(const Matrix& source, Matrix& target, double scale) const
+void PoroElasticity::MixedElmMats::add_pp (const Matrix& source, Matrix& target,
+                                           double scl) const
 {
-  target.addBlock(source, scale, 1 + b[Fu].size(), 1 + b[Fu].size());
+  target.addBlock(source, scl, 1 + b[Fu].size(), 1 + b[Fu].size());
 }
 
 
-void PoroElasticity::MixedElmMats::form_vector(const Vector &u, const Vector &p, Vector& target) const
+void PoroElasticity::MixedElmMats::form_vector (const Vector& u,
+                                                const Vector& p,
+                                                Vector& target) const
 {
   target = u;
   target.insert(target.end(), p.begin(), p.end());
 }
 
 
-void PoroElasticity::NonMixedElmMats::add_uu(const Matrix& source, Matrix& target, double scale) const
+void PoroElasticity::StdElmMats::add_uu (const Matrix& source, Matrix& target,
+                                         double scl) const
 {
-  size_t ndof_press = b[Fp].size();
-  size_t nsd = b[Fu].size() / ndof_press;
-  size_t nf = nsd + 1;
+  size_t nen = b[Fp].size();
+  size_t nf  = b[Fu].size()/nen + 1;
+  size_t i, j, k, l, ii, jj, kk, ll;
 
-  for (size_t i = 1; i <= ndof_press; ++i)
-    for (size_t j = 1; j <= ndof_press; ++j)
-      for (size_t l = 1; l <= nsd; ++l)
-        for (size_t k = 1; k <= nsd; ++k)
-          target(nf*(i-1)+l, nf*(j-1)+k) += scale * source(nsd*(i-1)+l, nsd*(j-1)+k);
+  for (i = kk = 1, ii = 0; i <= nen; i++, ii += nf)
+    for (k = 1; k < nf; k++, kk++)
+      for (j = ll = 1, jj = 0; j <= nen; j++, jj += nf)
+        for (l = 1; l < nf; l++, ll++)
+          target(ii+k,jj+l) += scl * source(kk,ll);
 }
 
 
-void PoroElasticity::NonMixedElmMats::add_up(const Matrix& source, Matrix& target, double scale) const
+void PoroElasticity::StdElmMats::add_up (const Matrix& source, Matrix& target,
+                                         double scl) const
 {
-  size_t ndof_press = b[Fp].size();
-  size_t nsd = b[Fu].size() / ndof_press;
-  size_t nf = nsd + 1;
+  size_t nen = b[Fp].size();
+  size_t nf  = b[Fu].size()/nen + 1;
+  size_t i, j, k, ii, jj, kk;
 
-  for (size_t i = 1; i <= ndof_press; ++i)
-    for (size_t j = 1; j <= ndof_press; ++j)
-      for (size_t l = 1; l <= nsd; ++l)
-        target(nf*(i-1)+l, j*nf) += scale * source(nsd*(i-1)+l, j);
+  for (i = kk = 1, ii = 0; i <= nen; i++, ii += nf)
+    for (k = 1; k < nf; k++, kk++)
+      for (j = 1, jj = nf; j <= nen; j++, jj += nf)
+        target(ii+k,jj) += scl * source(kk,j);
 }
 
 
-void PoroElasticity::NonMixedElmMats::add_pu(const Matrix& source, Matrix& target, double scale) const
+void PoroElasticity::StdElmMats::add_pu (const Matrix& source, Matrix& target,
+                                         double scl) const
 {
-  size_t ndof_press = b[Fp].size();
-  size_t nsd = b[Fu].size() / ndof_press;
-  size_t nf = nsd + 1;
+  size_t nen = b[Fp].size();
+  size_t nf  = b[Fu].size()/nen + 1;
+  size_t i, j, k, ii, jj, kk;
 
-  for (size_t i = 1; i <= ndof_press; ++i)
-    for (size_t j = 1; j <= ndof_press; ++j)
-      for (size_t l = 1; l <= nsd; ++l)
-        target(j*nf, nf*(i-1)+l) += scale * source(nsd*(i-1)+l, j);
+  for (i = kk = 1, ii = 0; i <= nen; i++, ii += nf)
+    for (k = 1; k < nf; k++, kk++)
+      for (j = 1, jj = nf; j <= nen; j++, jj += nf)
+        target(jj,ii+k) += scl * source(kk,j);
 }
 
 
-void PoroElasticity::NonMixedElmMats::add_pp(const Matrix& source, Matrix& target, double scale) const
+void PoroElasticity::StdElmMats::add_pp (const Matrix& source, Matrix& target,
+                                         double scl) const
 {
-  size_t ndof_press = b[Fp].size();
-  size_t nsd = b[Fu].size() / ndof_press;
-  size_t nf = nsd + 1;
+  size_t nen = b[Fp].size();
+  size_t nf  = b[Fu].size()/nen + 1;
+  size_t i, j, ii, jj;
 
-  for (size_t i = 1; i <= ndof_press; ++i)
-    for (size_t j = 1; j <= ndof_press; ++j)
-      target(i*nf, j*nf) += scale * source(i, j);
+  for (i = 1, ii = nf; i <= nen; i++, ii += nf)
+    for (j = 1, jj = nf; j <= nen; j++, jj += nf)
+      target(ii,jj) += scl * source(i,j);
 }
 
 
-void PoroElasticity::NonMixedElmMats::form_vector(const Vector& u, const Vector& p, Vector& target) const
+void PoroElasticity::StdElmMats::form_vector (const Vector& u,
+                                              const Vector& p,
+                                              Vector& target) const
 {
-  size_t nsd = b[Fu].size() / b[Fp].size();
-  utl::interleave(u, p, target, nsd, 1);
+  utl::interleave(u, p, target, b[Fu].size()/b[Fp].size(), 1);
 }

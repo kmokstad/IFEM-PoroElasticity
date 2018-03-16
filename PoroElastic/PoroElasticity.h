@@ -92,6 +92,7 @@ protected:
     //! \brief Returns the element level right-hand-side vector.
     virtual const Vector& getRHSVector() const;
 
+  protected:
     //! \brief Adds in a UU-matrix to a system matrix
     virtual void add_uu(const Matrix& source, Matrix& target,
                         double scl = 1.0) const = 0;
@@ -124,6 +125,7 @@ private:
     //! \brief Empty destructor.
     virtual ~MixedElmMats() {}
 
+  protected:
     //! \brief Adds in a UU-matrix to a system matrix
     virtual void add_uu(const Matrix& source, Matrix& target, double scl) const;
     //! \brief Adds in a UP-matrix to a system matrix
@@ -138,15 +140,16 @@ private:
   };
 
   //! \brief Class representing the element matrices for standard formulation.
-  class NonMixedElmMats : public Mats
+  class StdElmMats : public Mats
   {
   public:
     //! \brief The constructor forwards to the parent class constructor.
-    NonMixedElmMats(size_t ndof_d, size_t ndof_p, bool neumann, char dyn = 0)
+    StdElmMats(size_t ndof_d, size_t ndof_p, bool neumann, char dyn = 0)
       : Mats(ndof_d, ndof_p, neumann, dyn) {}
     //! \brief Empty destructor.
-    virtual ~NonMixedElmMats() {}
+    virtual ~StdElmMats() {}
 
+  protected:
     //! \brief Adds in a UU-matrix to a system matrix
     virtual void add_uu(const Matrix& source, Matrix& target, double scl) const;
     //! \brief Adds in a UP-matrix to a system matrix
