@@ -71,6 +71,7 @@ else()
   if(HDF5_FOUND AND CEREAL_FOUND)
     ifem_add_restart_test(Terzhagi-restart.reg PoroElasticity 5)
   endif()
+  ifem_add_vtf_test(SoilColumn3D.vreg PoroElasticity)
 endif()
 list(APPEND TEST_APPS PoroElasticity)
 
