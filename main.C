@@ -109,7 +109,7 @@ int main (int argc, char** argv)
     if (SIMoptions::ignoreOldOptions(argc,argv,i))
       ; // ignore the obsolete option
     else if (!strcmp(argv[i],"-2D"))
-      twoD = SIMElasticity<SIM2D>::planeStrain = true;
+      twoD = Elastic::planeStrain = true;
     else if (!strcmp(argv[i],"-mixed"))
       ASMmxBase::Type = ASMmxBase::FULL_CONT_RAISE_BASIS1;
     else if (!strcmp(argv[i],"-dyn2"))
