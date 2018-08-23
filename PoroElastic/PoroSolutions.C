@@ -41,7 +41,7 @@ double TerzhagiPressure::evaluate (const Vec3& X) const
     double exp_c = exp(-j*j * M_PI * M_PI * 0.25 * stime);
     double p_fac = 4.0 * load / (j * M_PI);
     p_add = cos(trig_arg) * exp_c * p_fac;
-    p_ret += i%2 ? p_add : -p_add;
+    p_ret += (i%2) ? p_add : -p_add;
   }
 
   return p_ret;
