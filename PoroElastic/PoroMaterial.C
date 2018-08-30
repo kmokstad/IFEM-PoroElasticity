@@ -92,10 +92,6 @@ void PoroMaterial::parse (const TiXmlElement* elem)
   propertyParse(rhof, elem, "rhof", "fluiddensity");
   propertyParse(rhos, elem, "rhos", "soliddensity");
 
-  propertyParse(thermalexpansion, elem, "alpha", "thermalexpansion");
-  propertyParse(heatcapacity, elem, "cp", "heatcapacity");
-  propertyParse(conductivity, elem, "kappa", "conductivity");
-
   propertyParse(porosity, elem, "poro", "porosity");
   propertyParse(permeability, elem, "perm", "permeability");
   propertyParse(bulkf, elem, "Kf", "fluidbulk");
@@ -125,24 +121,6 @@ void PoroMaterial::printLog () const
                <<"\n\t\tBulk Modulus of Medium, Ko = "<< bulkm.constant;
   IFEM::cout <<"\n\tPorosity, n = "<< porosity.constant
              <<"\n\tPermeability, K = "<< permeability.constant << std::endl;
-}
-
-
-double PoroMaterial::getThermalExpansion (double T) const
-{
-  return thermalexpansion.evaluate(T);
-}
-
-
-double PoroMaterial::getHeatCapacity (double T) const
-{
-  return heatcapacity.evaluate(T);
-}
-
-
-double PoroMaterial::getThermalConductivity (double T) const
-{
-  return conductivity.evaluate(T);
 }
 
 
