@@ -15,7 +15,7 @@
 #define _PORO_ELASTICITY_H_
 
 #include "Elasticity.h"
-#include "ElmMats.h"
+#include "BlockElmMats.h"
 
 
 /*!
@@ -58,18 +58,19 @@ public:
 
     // Sub-matrices, sized according to the bases in question
     uu_K = 1,  // Stiffness matrix
-    uu_M = 2,  // Mass matrix
+    pp_S = 2,  // Compressibility matrix
     up_Q = 3,  // Coupling matrix
-    up_D = 4,  // Dynamic coupling matrix
-    pp_S = 5,  // Compressibility matrix
-    pp_P = 6,  // Permeability matrix
+    pu_Q = 4,  // Coupling matrix
+    uu_M = 5,  // Mass matrix
+    up_D = 6,  // Dynamic coupling matrix
+    pp_P = 7,  // Permeability matrix
 
-    NMAT = 7
+    NMAT = 8
   };
 
 protected:
   //! \brief Superclass for the PoroElasticity element matrices.
-  class Mats : public ElmMats
+  class Mats : public BlockElmMats
   {
   public:
     //! \brief Default constructor.
@@ -78,7 +79,7 @@ protected:
     //! \param[in] neumann Whether or not we are assembling Neumann BCs
     //! \param[in] dynamic Option for dynamic analysis
     //! (0: static analysis, 1: allocate M, 2: allocate M and D)
-    Mats(size_t ndof_displ, size_t ndof_press, bool neumann, char dynamic);
+    Mats(size_t ndof_displ, size_t ndof_press, bool neumann, char dynamic, int nbasis, int nsd);
     //! \brief Empty destructor.
     virtual ~Mats() {}
 
@@ -93,23 +94,6 @@ protected:
     virtual const Vector& getRHSVector() const;
 
   protected:
-    //! \brief Adds in a UU-matrix to a system matrix
-    virtual void add_uu(const Matrix& source, Matrix& target,
-                        double scl = 1.0) const = 0;
-    //! \brief Adds in a UP-matrix to a system matrix
-    virtual void add_up(const Matrix& source, Matrix& target,
-                        double scl = 1.0) const = 0;
-    //! \brief Adds in the transpose of a UP-matrix to a system matrix
-    virtual void add_pu(const Matrix& source, Matrix& target,
-                        double scl = 1.0) const = 0;
-    //! \brief Adds in a PP-matrix to a system matrix
-    virtual void add_pp(const Matrix& source, Matrix& target,
-                        double scl = 1.0) const = 0;
-    //! \brief Forms a system vector out of two sub-vectors
-    virtual void form_vector(const Vector& u, const Vector& p,
-                             Vector& target) const = 0;
-
-  protected:
     double h;      //!< Current time step size
     double lambda; //!< Perpendicular crack stretch at current location
   };
@@ -120,23 +104,10 @@ private:
   {
   public:
     //! \brief The constructor forwards to the parent class constructor.
-    MixedElmMats(size_t ndof_d, size_t ndof_p, bool neumann, char dyn = 0)
-      : Mats(ndof_d, ndof_p, neumann, dyn) {}
+    MixedElmMats(size_t ndof_d, size_t ndof_p, bool neumann, char dyn, int nsd)
+      : Mats(ndof_d, ndof_p, neumann, dyn, 2, nsd) {}
     //! \brief Empty destructor.
     virtual ~MixedElmMats() {}
-
-  protected:
-    //! \brief Adds in a UU-matrix to a system matrix
-    virtual void add_uu(const Matrix& source, Matrix& target, double scl) const;
-    //! \brief Adds in a UP-matrix to a system matrix
-    virtual void add_up(const Matrix& source, Matrix& target, double scl) const;
-    //! \brief Adds in the transpose of a UP-matrix to a system matrix
-    virtual void add_pu(const Matrix& source, Matrix& target, double scl) const;
-    //! \brief Adds in a PP-matrix to a system matrix
-    virtual void add_pp(const Matrix& source, Matrix& target, double scl) const;
-    //! \brief Forms a system vector out of two sub-vectors
-    virtual void form_vector(const Vector& u, const Vector& p,
-                             Vector& target) const;
   };
 
   //! \brief Class representing the element matrices for standard formulation.
@@ -144,23 +115,10 @@ private:
   {
   public:
     //! \brief The constructor forwards to the parent class constructor.
-    StdElmMats(size_t ndof_d, size_t ndof_p, bool neumann, char dyn = 0)
-      : Mats(ndof_d, ndof_p, neumann, dyn) {}
+    StdElmMats(size_t ndof_d, size_t ndof_p, bool neumann, char dyn, int nsd)
+      : Mats(ndof_d, ndof_p, neumann, dyn, 1, nsd) {}
     //! \brief Empty destructor.
     virtual ~StdElmMats() {}
-
-  protected:
-    //! \brief Adds in a UU-matrix to a system matrix
-    virtual void add_uu(const Matrix& source, Matrix& target, double scl) const;
-    //! \brief Adds in a UP-matrix to a system matrix
-    virtual void add_up(const Matrix& source, Matrix& target, double scl) const;
-    //! \brief Adds in the transpose of a UP-matrix to a system matrix
-    virtual void add_pu(const Matrix& source, Matrix& target, double scl) const;
-    //! \brief Adds in a PP-matrix to a system matrix
-    virtual void add_pp(const Matrix& source, Matrix& target, double scl) const;
-    //! \brief Forms a system vector out of two sub-vectors
-    virtual void form_vector(const Vector& u, const Vector& p,
-                             Vector& target) const;
   };
 
   //! \brief Class representing the element matrices for dynamic problems.
@@ -169,9 +127,9 @@ private:
   public:
     //! \brief The constructor initializes the time integration parameters.
     NewmarkMats(size_t ndof_d, size_t ndof_p, bool neumann,
-                double b, double c, double m = 0.0, double s = 0.0,
-                bool useDynCpl = false)
-      : P(ndof_d, ndof_p, neumann, useDynCpl ? 2 : 1),
+                double b, double c, double m, double s,
+                bool useDynCpl, int nsd)
+      : P(ndof_d, ndof_p, neumann, useDynCpl ? 2 : 1, nsd),
         beta(fabs(b)), gamma(c), m_damp(m), s_damp(s), slvDisp(b < 0.0) {}
     //! \brief Empty destructor.
     virtual ~NewmarkMats() {}
@@ -179,18 +137,6 @@ private:
     //! \brief Returns the element-level Newton matrix.
     virtual const Matrix& getNewtonMatrix() const
     {
-      Matrix& res = const_cast<Matrix&>(P::A.front()); res.fill(0.0);
-      double betah2 = beta * P::h * P::h;
-      double gammah = gamma * P::h;
-      this->add_uu(P::A[uu_M], res, 1.0    + gammah * m_damp);
-      this->add_uu(P::A[uu_K], res, betah2 + gammah * s_damp);
-      this->add_up(P::A[up_Q], res,-betah2);
-      this->add_pu(P::A[up_Q], res, gammah);
-      if (!P::A[up_D].empty())
-        this->add_pu(P::A[up_D], res, -1.0);
-      this->add_pp(P::A[pp_S], res, gammah);
-      this->add_pp(P::A[pp_P], res, betah2);
-      if (slvDisp) res.multiply(1.0/betah2);
 #if INT_DEBUG > 2
       std::cout <<"\nPoroElasticity::NewmarkMats::getNewtonMatrix:"
                 <<"\nElement stiffness matrix, K_uu"<< P::A[uu_K]
@@ -198,8 +144,23 @@ private:
                 <<"\nElement coupling matrix, Q_up"<< P::A[up_Q]
                 <<"\nElement dynamic coupling matrix, D_up"<< P::A[up_D]
                 <<"\nElement compressibility matrix, S_pp"<< P::A[pp_S]
-                <<"\nElement permeability matrix, P_pp"<< P::A[pp_P]
-                <<"\nElement coefficient matrix"<< P::A[Nsys];
+                <<"\nElement permeability matrix, P_pp"<< P::A[pp_P];
+#endif
+      Matrices& A = const_cast<Matrices&>(P::A);
+      double betah2 = beta * P::h * P::h;
+      double gammah = gamma * P::h;
+      A[uu_K] *= betah2 + gammah * s_damp;
+      A[uu_K].add(A[uu_M], 1.0 + gammah * m_damp);
+      A[pu_Q].addBlock(A[up_Q], gammah, 1, 1, true);
+      A[up_Q] *= -betah2;
+      if (!A[up_D].empty())
+	A[pu_Q].addBlock(A[up_D], -1.0, 1, 1, true);
+      A[pp_S] *= gammah;
+      A[pp_S].add(A[pp_P],betah2);
+      this->BlockElmMats::getNewtonMatrix();
+      if (slvDisp) A[0].multiply(1.0/betah2);
+#if INT_DEBUG > 2
+      std::cout <<"\nElement coefficient matrix"<< P::A[Nsys];
 #endif
       return P::A.front();
     }
@@ -207,7 +168,8 @@ private:
     //! \brief Returns the element-level right-hand-side vector.
     virtual const Vector& getRHSVector() const
     {
-      Vector tu(P::b[Fu]), tp(P::b[Fp]);
+      Vector& tu = const_cast<Vector&>(P::b[Fu]);
+      Vector& tp = const_cast<Vector&>(P::b[Fp]);
       if (P::A.size() > up_Q && P::vec.size() > Vp)
         P::A[up_Q].multiply(P::vec[Vp],    tu, false, 1);
       if (P::A.size() > pp_P && P::vec.size() > Vp)
@@ -224,8 +186,6 @@ private:
         P::A[uu_M].multiply(P::vec[Vuvel]*m_damp, tu, false, -1);
       if (P::A.size() > uu_K && P::vec.size() > Vuvel && s_damp > 0.0)
         P::A[uu_K].multiply(P::vec[Vuvel]*s_damp, tu, false, -1);
-
-      this->form_vector(tu, tp, const_cast<Vector&>(P::b.front()));
 #if INT_DEBUG > 2
       std::cout <<"\nPoroElasticity::NewmarkMats::getRHSVector:";
       if (P::vec.size() > Vu)
@@ -238,9 +198,12 @@ private:
         std::cout <<"Element velocity, Vuvel"<< P::vec[Vuvel];
       if (P::vec.size() > Vpvel)
         std::cout <<"Element pressure rate, Vpvel"<< P::vec[Vpvel];
+#endif
+      const Vector& result = this->BlockElmMats::getRHSVector();
+#if INT_DEBUG > 2
       std::cout <<"\nElement right-hand-side vector"<< P::b[Fsys];
 #endif
-      return P::b.front();
+      return result;
     }
 
   protected:
