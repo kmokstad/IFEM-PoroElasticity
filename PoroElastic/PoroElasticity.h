@@ -386,16 +386,16 @@ public:
   //! \param[in] prefix Name prefix for all components
   virtual std::string getField2Name(size_t i, const char* prefix) const;
 
-private:
-  //! \brief Evaluates the secondary solution at a result point.
+protected:
+  //! \brief Evaluates the strain and stress fields at a result point.
   //! \param[out] s The solution field values at current point
   //! \param[in] fe Finite element data at current point
   //! \param[in] X Cartesian coordinates of current point
-  //! \param[in] disp The displacement coefficients
-  bool evalSolCommon(Vector& s,
-                     const FiniteElement& fe, const Vec3& X,
-                     const Vector& disp) const;
+  //! \param[in] disp The displacement coefficients for current element
+  bool evalSol(Vector& s, const FiniteElement& fe, const Vec3& X,
+               const Vector& disp) const;
 
+private:
   //! \brief Computes the coupling matrix for a quadrature point.
   bool evalCouplingMatrix(Matrix& mx, const Matrix& B, const Vector& N,
                           double scl) const;

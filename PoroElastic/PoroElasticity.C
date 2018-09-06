@@ -158,7 +158,6 @@ bool PoroElasticity::initElement (const std::vector<int>& MNPC,
 
   std::cerr <<" *** PoroElasticity::initElement: Detected "<< ierr
             <<" node numbers out of range."<< std::endl;
-
   return false;
 }
 
@@ -199,7 +198,6 @@ bool PoroElasticity::initElement (const std::vector<int>& MNPC,
 
   std::cerr <<" *** PoroElasticity::initElement: Detected "<< ierr
             <<" node numbers out of range."<< std::endl;
-
   return false;
 }
 
@@ -226,8 +224,11 @@ bool PoroElasticity::evalElasticityMatrices (ElmMats& elMat, const Matrix& B,
 
   // Integrate the (material) stiffness
   Matrix CB;
-  CB.multiply(C,B).multiply(fe.detJxW); // CB = dSdE*B*|J|*w
-  elMat.A[uu_K].multiply(B,CB,true,false,true); // K_uu += B^T * CB
+  if (CB.multiply(C,B).multiply(fe.detJxW).empty()) // CB = dSdE*B*|J|*w
+    return false;
+
+  if (elMat.A[uu_K].multiply(B,CB,true,false,true).empty()) // K_uu += B^T * CB
+    return false;
 
   // Integrate the internal forces, if deformed configuration
   if (iS == 0 || eps.isZero(1.0e-16))
@@ -246,9 +247,7 @@ bool PoroElasticity::evalCouplingMatrix (Matrix& mx, const Matrix& B,
     for (size_t j = 1; j <= nsd; j++)
       K(i,j) = scl * N(i);
 
-  mx.multiply(B, K, true, true, true);
-
-  return true;
+  return !mx.multiply(B,K,true,true,true).empty();
 }
 
 
@@ -399,13 +398,12 @@ std::string PoroElasticity::getField1Name (size_t i, const char* prefix) const
 {
   if (i == 11)
     return "Displacements";
-  if (i == 12)
+  else if (i == 12)
     return "Pressure";
-
-  if (i >= nsd)
+  else if (i >= nsd)
     i = 3;
 
-  static const char* s[5] = {"u_x", "u_y", "u_z", "p^w"};
+  static const char* s[4] = {"u_x", "u_y", "u_z", "p^w"};
 
   if (!prefix)
     return s[i];
@@ -416,11 +414,11 @@ std::string PoroElasticity::getField1Name (size_t i, const char* prefix) const
 
 std::string PoroElasticity::getField2Name (size_t i, const char* prefix) const
 {
-  static const char* s[][6] = {{"x", "y", "xy"},
+  static const char* s[][6] = {{"x", "y", "xy", "", "", ""},
                                {"x", "y", "z", "yz", "xz", "xy"}};
-  size_t ncomps = nsd * (nsd + 1) / 2;
 
-  std::string name = (i < ncomps ? "eps" : "sig") + std::string("_") + s[nsd-2][i % ncomps];
+  size_t ncmp = nsd * (nsd + 1) / 2;
+  std::string name = std::string(i < ncmp ? "eps_" : "sig_") + s[nsd-2][i%ncmp];
   if (!prefix)
     return name;
 
@@ -433,11 +431,12 @@ bool PoroElasticity::evalSol (Vector& s, const MxFiniteElement& fe,
                               const std::vector<size_t>& elem_sizes,
                               const std::vector<size_t>&) const
 {
-  Vector eV;
-  std::vector<int>::const_iterator fstart = MNPC.begin() + elem_sizes.front();
-  utl::gather(std::vector<int>(MNPC.begin(),fstart),nsd,primsol.front(),eV);
+  std::vector<int> MNPC1(MNPC.begin(),MNPC.begin()+elem_sizes.front());
 
-  return this->evalSolCommon(s,fe,X,Vector(eV.ptr(),nsd*fe.N.size()));
+  Vector eV;
+  utl::gather(MNPC1,nsd,primsol.front(),eV);
+
+  return this->evalSol(s,fe,X,eV);
 }
 
 
@@ -449,16 +448,15 @@ bool PoroElasticity::evalSol (Vector& s, const FiniteElement& fe,
 
   Vector disp(nsd * fe.N.size());
   for (size_t i = 0; i < nsd; i++)
-    for (size_t bfun = 0; bfun < fe.N.size(); bfun++)
-      disp[nsd*bfun+i] = eV[npv*bfun+i];
+    for (size_t a = 0; a < fe.N.size(); a++)
+      disp[nsd*a+i] = eV[npv*a+i];
 
-  return this->evalSolCommon(s,fe,X,disp);
+  return this->evalSol(s,fe,X,disp);
 }
 
 
-bool PoroElasticity::evalSolCommon (Vector& s,
-                                    const FiniteElement& fe, const Vec3& X,
-                                    const Vector& disp) const
+bool PoroElasticity::evalSol (Vector& s, const FiniteElement& fe,
+                              const Vec3& X, const Vector& disp) const
 {
   if (!material)
   {
@@ -530,7 +528,7 @@ std::string PoroNorm::getName (size_t i, size_t j, const char* prefix) const
   if (i == 0 || j == 0 || j > 4)
     return this->NormBase::getName(i, j, prefix);
 
-  static const char* s[6] = {
+  static const char* s[4] = {
     "|u^h|_l2",
     "|p^h|_l2",
     "|u-u^h|_l2",
