@@ -38,7 +38,9 @@ public:
   virtual bool solveStep(TimeStep& tp)
   {
     this->printStep(tp.step,tp.time);
-    if (!this->updateDirichlet(tp.time.t,&this->getSolution()))
+
+    Vector empty;
+    if (!this->updateDirichlet(tp.time.t,&empty))
       return false;
 
     double oldtol = utl::zero_print_tol;
