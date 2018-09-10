@@ -63,12 +63,6 @@ public:
   double getSolidDensity(const Vec3&) const;
   //! \brief Evaluates the mass density at current point.
   virtual double getMassDensity(const Vec3&) const;
-  //! \brief Evaluates the heat capacity for given temperature.
-  virtual double getHeatCapacity(double T) const;
-  //! \brief Evaluates the thermal conductivity for given temperature.
-  virtual double getThermalConductivity(double T) const;
-  //! \brief Evaluates the thermal expansion coefficient for given temperature.
-  virtual double getThermalExpansion(double T) const;
   //! \brief Returns porosity at the current point.
   double getPorosity(const Vec3& X) const;
   //! \brief Returns permeability at the current point.
@@ -116,10 +110,6 @@ protected:
   FuncConstPair<RealFunc> nu;   //!< Poisson's ratio
   FuncConstPair<RealFunc> rhof; //!< Fluid density
   FuncConstPair<RealFunc> rhos; //!< Solid density
-
-  FuncConstPair<ScalarFunc> thermalexpansion; //!< Thermal expansion coefficient
-  FuncConstPair<ScalarFunc> heatcapacity;     //!< Specific heat capacity
-  FuncConstPair<ScalarFunc> conductivity;     //!< Thermal conductivity
 
   FuncConstPair<RealFunc> porosity;     //!< Porosity
   FuncConstPair<VecFunc>  permeability; //!< Permeability
