@@ -45,6 +45,6 @@
                perm="0.00000000000001962 0.00000000000001962 0.0"/>
   </poroelasticity>
 
-  <timestepping start="0" end="2400.2" dt="1200.2"/>
+  <timestepping start="0" end="2400.4" dt="1200.2"/>
 
 </simulation>

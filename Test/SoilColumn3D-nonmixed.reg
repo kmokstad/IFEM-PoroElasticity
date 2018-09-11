@@ -25,7 +25,7 @@ Number of unknowns    888
   Primary solution summary: L2-norm            : 0.00016794
                             Max Y-displacement : 0.00038676
                             Max pressure       : 0.000350497
-  step=2  time=2400.2
-  Primary solution summary: L2-norm            : 0.000161666
-                            Max Y-displacement : 0.00051738
-                            Max pressure       : 0.000166088
+  step=2  time=2400.4
+  Primary solution summary: L2-norm            : 0.000161669
+                            Max Y-displacement : 0.00051739
+                            Max pressure       : 0.000166086

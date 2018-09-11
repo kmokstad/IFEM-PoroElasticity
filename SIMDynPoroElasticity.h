@@ -48,7 +48,7 @@ public:
   }
 
   //! \brief Initializes the problem.
-  virtual bool init(const TimeStep&, bool withRF)
+  virtual bool init(const TimeStep& tp, bool withRF)
   {
     if (!this->initSystem(Dim::opt.solver,1,1,0,withRF))
       return false;
@@ -56,7 +56,7 @@ public:
     dSim.initPrm();
     dSim.initSol(3);
 
-    bool ok = this->setMode(SIM::INIT);
+    bool ok = this->setMode(SIM::INIT) && this->getIntegrand()->init(tp.time);
     this->setQuadratureRule(Dim::opt.nGauss[0],true);
     return ok;
   }

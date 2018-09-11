@@ -73,13 +73,16 @@ protected:
   class Mats : public BlockElmMats
   {
   public:
-    //! \brief Default constructor.
+    //! \brief The constructor initializes the block sub-matrices.
     //! \param[in] ndof_displ Number of dofs in displacement
     //! \param[in] ndof_press Number of dofs in pressure
     //! \param[in] neumann Whether or not we are assembling Neumann BCs
     //! \param[in] dynamic Option for dynamic analysis
     //! (0: static analysis, 1: allocate M, 2: allocate M and D)
-    Mats(size_t ndof_displ, size_t ndof_press, bool neumann, char dynamic, int nbasis, int nsd);
+    //! \param[in] nbasis Number of different bases
+    //! \param[in] nsd Number of space dimensions
+    Mats(size_t ndof_displ, size_t ndof_press, bool neumann, char dynamic,
+         int nbasis, int nsd);
     //! \brief Empty destructor.
     virtual ~Mats() {}
 
@@ -235,8 +238,10 @@ public:
   //! \param[in] mode The solution mode to use
   virtual void setMode(SIM::SolutionMode mode);
 
-  //! \brief Returns the scaling factor at given location.
-  double getScaling(const Vec3& X, double dt = 0.0) const;
+  //! \brief Initializes the scaling factor.
+  virtual bool init(const TimeDomain& time);
+  //! \brief Returns the scaling factor.
+  double getScaling() const { return scl; }
 
   //! \brief Returns a local integral contribution object for the given element.
   //! \param[in] nen Number of nodes on element for each basis
@@ -361,18 +366,19 @@ protected:
 private:
   //! \brief Computes the coupling matrix for a quadrature point.
   bool evalCouplingMatrix(Matrix& mx, const Matrix& B, const Vector& N,
-                          double scl) const;
+                          double scale) const;
 
   //! \brief Computes the compressibility matrix for a quadrature point.
-  bool evalCompressibilityMatrix(Matrix& mx, const Vector& N, double scl) const;
+  bool evalCompressibilityMatrix(Matrix& mx, const Vector& N,
+                                 double scale) const;
 
   //! \brief Computes the permeability matrix for a quadrature point.
   void evalPermeabilityMatrix(Matrix& mx, const Matrix& dNdX,
-                              const SymmTensor& K, double scl) const;
+                              const SymmTensor& K, double scale) const;
 
   //! \brief Computes the dynamic coupling matrix for a quadrature point.
   void evalDynCouplingMatrix(Matrix& mx, const Vector& Nu, const Matrix& dNpdx,
-                             const SymmTensor& K, double scl) const;
+                             const SymmTensor& K, double scale) const;
 
 protected:
   //! \brief Computes the elasticity matrices for a quadrature point.
@@ -395,7 +401,7 @@ protected:
                                       const Vec3& X) const;
 
 private:
-  double sc; //!< Scaling factor
+  double scl; //!< Scaling factor
 
   bool calculateEnergy; //!< If \e true, perform energy norm calculation
   bool useDynCoupling;  //!< If \e true, include the dynamic coupling matrix

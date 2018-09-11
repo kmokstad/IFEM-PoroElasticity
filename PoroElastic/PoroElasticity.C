@@ -30,7 +30,7 @@ PoroElasticity::PoroElasticity (unsigned short int n, bool mix) : Elasticity(n)
   gravity[n-1] = 9.81; // Default gravity acceleration
   npv = mix ? 0 : nsd+1; // Number of primary unknowns per node (non-mixed only)
 
-  sc = 0.0;
+  scl = 0.0;
   calculateEnergy = useDynCoupling = false;
 
   volumeFlux = nullptr;
@@ -51,8 +51,8 @@ bool PoroElasticity::parse (const TiXmlElement* elem)
   }
   else if (strcasecmp(elem->Value(),"scaling"))
     return this->Elasticity::parse(elem);
-  else if (utl::getAttribute(elem,"value",sc))
-    IFEM::cout <<"\tScaling: sc = "<< sc << std::endl;
+  else if (utl::getAttribute(elem,"value",scl))
+    IFEM::cout <<"\tScaling: sc = "<< scl << std::endl;
 
   return true;
 }
@@ -70,7 +70,7 @@ Material* PoroElasticity::parseMatProp (const TiXmlElement* elem, bool)
 
 void PoroElasticity::printLog () const
 {
-  IFEM::cout <<"PoroElasticity: scaling = "<< sc <<" useDynCoupling = "
+  IFEM::cout <<"PoroElasticity: scaling = "<< scl <<" useDynCoupling = "
              << std::boolalpha << useDynCoupling << std::endl;
   this->Elasticity::printLog();
 }
@@ -84,17 +84,28 @@ void PoroElasticity::setMode (SIM::SolutionMode mode)
 }
 
 
-double PoroElasticity::getScaling (const Vec3& X, double dt) const
+bool PoroElasticity::init (const TimeDomain& time)
 {
-  if (sc != 0.0 || dt == 0.0)
-    return sc;
+  if (scl != 0.0)
+    return true; // Using value from input file
 
   const PoroMaterial* pmat = dynamic_cast<const PoroMaterial*>(material);
-  if (!pmat) return sc;
+  if (pmat && time.dt > 0.0)
+  {
+    Vec3 X;
+    double rhog = pmat->getFluidDensity(X) * gravity.length();
+    Vec3 permeability = pmat->getPermeability(X);
+    if (permeability.x > 0.0)
+    {
+      scl = sqrt(pmat->getStiffness(X) * rhog / permeability.x / time.dt);
+      IFEM::cout <<"PoroElasticity: Computed scaling = "<< scl << std::endl;
+      return true;
+    }
+  }
 
-  double rhog = pmat->getFluidDensity(X) * gravity.length();
-  Vec3 permeability = pmat->getPermeability(X);
-  return sqrt(pmat->getStiffness(X) * rhog / permeability.x / dt);
+  std::cerr <<" *** PoroElasticity::init: Failed to compute scaling factor,"
+            <<" check problem set up."<< std::endl;
+  return false;
 }
 
 
@@ -241,46 +252,46 @@ bool PoroElasticity::evalElasticityMatrices (ElmMats& elMat, const Matrix& B,
 
 
 bool PoroElasticity::evalCouplingMatrix (Matrix& mx, const Matrix& B,
-                                         const Vector& N, double scl) const
+                                         const Vector& N, double scale) const
 {
   Matrix K(N.size(), nsd * (nsd + 1) / 2);
   for (size_t i = 1; i <= N.size(); i++)
     for (size_t j = 1; j <= nsd; j++)
-      K(i,j) = scl * N(i);
+      K(i,j) = scale * N(i);
 
   return !mx.multiply(B,K,true,true,true).empty();
 }
 
 
 bool PoroElasticity::evalCompressibilityMatrix (Matrix& mx, const Vector& N,
-                                                double scl) const
+                                                double scale) const
 {
-  return mx.outer_product(N,N,true,scl);
+  return mx.outer_product(N,N,true,scale);
 }
 
 
 void PoroElasticity::evalPermeabilityMatrix (Matrix& mx, const Matrix& dNdX,
                                              const SymmTensor& K,
-                                             double scl) const
+                                             double scale) const
 {
   for (size_t i = 1; i <= dNdX.rows(); i++)
     for (size_t j = 1; j <= dNdX.rows(); j++)
       for (size_t k = 1; k <= nsd; k++)
         for (size_t l = 1; l <= nsd; l++)
-          mx(i,j) += scl * dNdX(i,k) * K(k,l) * dNdX(j,l);
+          mx(i,j) += scale * dNdX(i,k) * K(k,l) * dNdX(j,l);
 }
 
 
 void PoroElasticity::evalDynCouplingMatrix (Matrix& mx, const Vector& Nu,
                                             const Matrix& dNpdx,
                                             const SymmTensor& K,
-                                            double scl) const
+                                            double scale) const
 {
   for (size_t i = 1; i <= dNpdx.rows(); i++)
     for (size_t j = 1; j <= Nu.size(); j++)
       for (size_t k = 1; k <= nsd; k++)
         for (size_t l = 1; l <= nsd; l++)
-          mx(nsd*(j-1) + k, i) += dNpdx(i,k) * K(k,l) * Nu(j) * scl;
+          mx(nsd*(j-1) + k, i) += dNpdx(i,k) * K(k,l) * Nu(j) * scale;
 }
 
 
@@ -326,7 +337,6 @@ bool PoroElasticity::evalInt (LocalIntegral& elmInt,
   double poro  = pmat->getPorosity(X);
   double alpha = pmat->getBiotCoeff(X);
   double Minv  = pmat->getBiotModulus(X,alpha,poro);
-  double scl   = this->getScaling(X,time.dt);
 
   // Integrate the element matrices, depending on solution mode
   ElmMats& elMat = static_cast<ElmMats&>(elmInt);
