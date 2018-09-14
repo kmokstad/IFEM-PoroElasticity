@@ -29,7 +29,7 @@ template<class T> class SIMDriver : public SIMSolver<T>
 {
 public:
   //! \brief The constructor forwards to the parent class constructor.
-  SIMDriver(T& s) : SIMSolver<T>(s) {}
+  explicit SIMDriver(T& s) : SIMSolver<T>(s) {}
   //! \brief Empty destructor.
   virtual ~SIMDriver() {}
   //! \brief Overrides the stop time that was read from the input file.
