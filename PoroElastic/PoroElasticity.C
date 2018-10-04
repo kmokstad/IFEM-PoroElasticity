@@ -74,6 +74,14 @@ Material* PoroElasticity::parseMatProp (const TiXmlElement* elem, bool)
 }
 
 
+void PoroElasticity::getNodalDofTypes (std::vector<char>& dType) const
+{
+  dType.resize(npv,'D');
+  if (npv > nsd)
+    dType.back() = 'P';
+}
+
+
 void PoroElasticity::printLog () const
 {
   IFEM::cout <<"PoroElasticity: scaling = "<< scl <<" useDynCoupling = "

@@ -1,8 +1,59 @@
 SoilColumn3D-nonmixed.xinp
 
+Input file: SoilColumn3D-nonmixed.xinp
+Equation solver: 2
+Number of Gauss points: 4
+0. Parsing input file(s).
+1. Poroelasticity solver
+Parsing input file SoilColumn3D-nonmixed.xinp
+Parsing <geometry>
+  Generating linear geometry on unit parameter domain \[0,1]^3
 	Length in X = 0.001
 	Length in Y = 0.008
 	Length in Z = 0.001
+  Parsing <refine>
+  Parsing <topologysets>
+	Topology sets: Back (1,6,2D)
+	               Bottom (1,3,2D)
+	               Front (1,5,2D)
+	               Left (1,1,2D)
+	               Right (1,2,2D)
+	               Top (1,4,2D)
+  Parsing <refine>
+	Refining P1 5 5 5
+  Parsing <topologysets>
+Parsing <boundaryconditions>
+  Parsing <dirichlet>
+	Dirichlet code 13: (fixed)
+  Parsing <dirichlet>
+	Dirichlet code 1000013: (fixed)
+  Parsing <dirichlet>
+	Dirichlet code 2000013: (fixed)
+  Parsing <dirichlet>
+	Dirichlet code 3000013: (fixed)
+  Parsing <dirichlet>
+	Dirichlet code 123: (fixed)
+  Parsing <dirichlet>
+	Dirichlet code 4: (fixed)
+  Parsing <neumann>
+	Neumann code 1000000 direction 0: -1e+09
+Parsing <poroelasticity>
+  Parsing <isotropic>
+	Material code 0: Poroelastic material, see "Problem definition:" below.
+Parsing <timestepping>
+Parsing input file succeeded.
+Equation solver: 2
+Number of Gauss points: 4
+2. Time integration driver
+Parsing input file SoilColumn3D-nonmixed.xinp
+Parsing <geometry>
+Parsing <boundaryconditions>
+Parsing <poroelasticity>
+Parsing <timestepping>
+Parsing input file succeeded.
+10. Preprocessing the finite element model:
+11. Poroelasticity solver
+Problem definition:
 PoroElasticity: scaling = 0 useDynCoupling = false
 Elasticity: 3D, gravity = 0 0 9.81
 	Constitutive Properties:
@@ -17,15 +68,30 @@ Elasticity: 3D, gravity = 0 0 9.81
 		Bulk Modulus of Medium, Ko = 0
 	Porosity, n = 0.5
 	Permeability, K = 0 0 0
+Resolving Dirichlet boundary conditions
+	Constraining P1 F1 in direction(s) 13
+	Constraining P1 F2 in direction(s) 13
+	Constraining P1 F5 in direction(s) 13
+	Constraining P1 F6 in direction(s) 13
+	Constraining P1 F3 in direction(s) 123
+	Constraining P1 F4 in direction(s) 4
+ >>> SAM model summary <<<
 Number of elements    216
 Number of nodes       343
 Number of dofs        1372
+Number of D-dofs      1029
+Number of P-dofs      343
 Number of unknowns    888
+PoroElasticity: Computed scaling = 1.58101e+12
+100. Starting the simulation
   step=1  time=1200.2
-  Primary solution summary: L2-norm            : 0.00016794
+  Primary solution summary: L2-norm            : 0.000122786
+                   Pressure L2-norm            : 0.000259973
                             Max Y-displacement : 0.00038676
                             Max pressure       : 0.000350497
   step=2  time=2400.4
-  Primary solution summary: L2-norm            : 0.000161669
+  Primary solution summary: L2-norm            : 0.000173699
+                   Pressure L2-norm            : 0.000118464
                             Max Y-displacement : 0.00051739
                             Max pressure       : 0.000166086
+  Time integration completed.

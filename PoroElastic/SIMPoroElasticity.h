@@ -69,16 +69,12 @@ public:
     const size_t nsd = this->getNoSpaceDim();
     size_t iMax[nsd+1];
     double dMax[nsd+1];
-    double dNorm = this->solutionNorms(solution,dMax,iMax,this->getNoFields(1));
-    double pNorm = 0.0;
-    if (this->getNoFields(2) > 0)
-      pNorm = this->solutionNorms(solution,dMax+nsd,iMax+nsd,
-                                  this->getNoFields(2),'P');
+    double dNorm = this->solutionNorms(solution,dMax,iMax,nsd);
+    double pNorm = this->solutionNorms(solution,dMax+nsd,iMax+nsd,1,'P');
 
     IFEM::cout <<"  Primary solution summary: L2-norm            : "
-               << utl::trunc(dNorm);
-    if (pNorm != 0.0)
-      IFEM::cout <<"\n                   Pressure L2-norm            : "<< pNorm;
+               << utl::trunc(dNorm)
+               <<"\n                   Pressure L2-norm            : "<< pNorm;
 
     char D = 'X';
     for (size_t d = 0; d < nsd; d++, D++)

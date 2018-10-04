@@ -234,6 +234,9 @@ public:
   //! \brief Prints out the problem definition to the log stream.
   virtual void printLog() const;
 
+  //! \brief Returns nodal DOF flags for the monolithic coupled integrand.
+  virtual void getNodalDofTypes(std::vector<char>& dType) const;
+
   //! \brief Defines the solution mode before the element assembly is started.
   //! \param[in] mode The solution mode to use
   virtual void setMode(SIM::SolutionMode mode);
