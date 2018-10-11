@@ -17,8 +17,10 @@
 #include "SIMElasticityWrap.h"
 #include "SIM2D.h"
 #include "SIM3D.h"
+#include "SAM.h"
 #include "PoroElasticity.h"
 #include "ASMmxBase.h"
+#include "tinyxml.h"
 
 
 /*!
@@ -38,6 +40,7 @@ public:
 
     Dim::myHeading = "Poroelasticity solver";
     SIMElasticity<Dim>::myContext = "poroelasticity";
+    scaleD = scaleP = 0.0;
   }
 
   //! \brief Empty destructor.
@@ -60,6 +63,41 @@ public:
     this->printSolutionSummary(SIMsolution::solution.front());
 
     return this->postSolve(tp);
+  }
+
+  //! \brief Evaluates some iteration norms for convergence assessment.
+  //! \param[in] x Global primary solution vector
+  //! \param[in] r Global residual vector associated with the solution vector
+  //! \param[out] eNorm Energy norm of solution increment
+  //! \param[out] rNorm Residual norm of solution increment
+  //! \param[out] dNorm Displacement norm of solution increment
+  virtual void iterationNorms(const Vector& u, const Vector& r,
+                              double& eNorm, double& rNorm, double& dNorm) const
+  {
+    if (scaleD > 0.0)
+    {
+      eNorm = Dim::mySam->dot(r,u,'D')*scaleD;
+      rNorm = Dim::mySam->norm2(r,'D')*scaleD;
+      dNorm = Dim::mySam->norm2(u,'D')*scaleD;
+    }
+    else if (scaleP > 0.0)
+      eNorm = rNorm = dNorm = 0.0;
+    else
+      this->Dim::iterationNorms(u,r,eNorm,rNorm,dNorm);
+
+    if (scaleP > 0.0)
+    {
+      eNorm += Dim::mySam->dot(r,u,'P')*scaleP;
+      rNorm += Dim::mySam->norm2(r,'P')*scaleP;
+      dNorm += Dim::mySam->norm2(u,'P')*scaleP;
+    }
+
+    if (scaleD+scaleP > 0.0)
+    {
+      eNorm /= (scaleD+scaleP);
+      rNorm /= (scaleD+scaleP);
+      dNorm /= (scaleD+scaleP);
+    }
   }
 
   //! \brief Prints a summary of the calculated solution to std::cout.
@@ -135,9 +173,33 @@ protected:
     return static_cast<Elasticity*>(Dim::myProblem);
   }
 
+  using SIMElasticityWrap<Dim>::parse;
+  //! \brief Parses a data section from an XML element
+  //! \param[in] elem The XML element to parse
+  virtual bool parse(const TiXmlElement* elem)
+  {
+    if (!strcasecmp(elem->Value(),"poroelasticity"))
+    {
+      const TiXmlElement* child = elem->FirstChildElement();
+      for (; child; child = child->NextSiblingElement())
+        if (!strcasecmp(child->Value(),"scaling"))
+        {
+          utl::getAttribute(child,"displacement",scaleD);
+          utl::getAttribute(child,"pressure",scaleP);
+          IFEM::cout <<"\tDisplacement scaling: "<< scaleD
+                     <<"\n\tPressure scaling: "<< scaleP << std::endl;
+        }
+    }
+    return this->SIMElasticityWrap<Dim>::parse(elem);
+  }
+
   using SIMElasticityWrap<Dim>::parseDimSpecific;
   //! \brief Parses a dimension-specific data section from an XML element.
   virtual bool parseDimSpecific(const TiXmlElement*);
+
+private:
+  double scaleD; //!< Displacement DOF scaling in convergence checks
+  double scaleP; //!< Pressure DOF scaling in convergence checks
 };
 
 
