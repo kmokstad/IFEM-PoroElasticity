@@ -133,7 +133,7 @@ public:
     Vectors gNorms;
     this->setMode(SIM::RECOVERY);
     this->setQuadratureRule(Dim::opt.nGauss[1]);
-    bool ok = this->solutionNorms(tp.time,SIMsolution::solution,gNorms);
+    bool ok = this->solutionNorms(tp.time,this->getSolutions(),gNorms);
     if (ok && !gNorms.empty())
       for (size_t i = 1; i <= gNorms.front().size(); i++)
         if (utl::trunc(gNorms.front()(i)) != 0.0)
@@ -145,7 +145,6 @@ public:
   }
 
   //! \brief Initializes for integration of Neumann terms for a given property.
-  //! \param[in] propInd Physical property index
   virtual bool initNeumann(size_t propInd)
   {
     PoroElasticity* prob = dynamic_cast<PoroElasticity*>(Dim::myProblem);
@@ -169,13 +168,12 @@ protected:
   virtual Elasticity* getIntegrand()
   {
     if (!Dim::myProblem)
-      Dim::myProblem = new PoroElasticity(Dim::dimension, Dim::nf.size() > 1, true);
+      Dim::myProblem = new PoroElasticity(Dim::dimension, Dim::nf.size() > 1);
     return static_cast<Elasticity*>(Dim::myProblem);
   }
 
   using SIMElasticityWrap<Dim>::parse;
   //! \brief Parses a data section from an XML element
-  //! \param[in] elem The XML element to parse
   virtual bool parse(const TiXmlElement* elem)
   {
     if (!strcasecmp(elem->Value(),"poroelasticity"))
@@ -195,7 +193,7 @@ protected:
 
   using SIMElasticityWrap<Dim>::parseDimSpecific;
   //! \brief Parses a dimension-specific data section from an XML element.
-  virtual bool parseDimSpecific(const TiXmlElement*);
+  virtual bool parseDimSpecific(const TiXmlElement* elem);
 
 private:
   double scaleD; //!< Displacement DOF scaling in convergence checks

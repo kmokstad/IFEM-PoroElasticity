@@ -21,21 +21,19 @@
 /*!
   \brief Characteristic quantities for nondimensionalization.
 */
-struct Characteristics {
+
+struct Characteristics
+{
   double E;         //!< Characteristic Young's modulus
   double alpha;     //!< Characteristic Biot's coefficient
   double perm;      //!< Characteristic permeability
   double p;         //!< Characteristic pressure
   double t;         //!< Characteristic time
 
-  //! \brief Initialize to unit scaling.
-  Characteristics() : E(1.0), alpha(1.0), perm(1.0), p(1.0), t(1.0) {};
-
-  //! \brief Update pressure and time scales to match physical parameters.
-  void normalize() {
-    p = E / alpha;
-    t = alpha * alpha / perm / E;
-  };
+  //! \brief The constructor initializes to unit scaling.
+  Characteristics() { E = alpha = perm = p = t = 1.0; }
+  //! \brief Updates pressure and time scales to match physical parameters.
+  void normalize() { p = E / alpha; t = alpha * alpha / perm / E; };
 };
 
 
@@ -49,44 +47,44 @@ public:
   //! \brief Enum for element-level solution vectors.
   enum SolutionVectors
   {
-    Vu = 0,    // Displacement
-    Vp = 1,    // Pore pressure
+    Vu = 0,    //!< Displacement
+    Vp = 1,    //!< Pore pressure
 
     // Newmark integration stuff
-    Vuvel = 2, // Velocity
-    Vpvel = 3, // Pore pressure rate
-    Vuacc = 4, // Acceleration
+    Vuvel = 2, //!< Velocity
+    Vpvel = 3, //!< Pore pressure rate
+    Vuacc = 4, //!< Acceleration
 
-    NSOL = 5
+    NSOL = 5   //!< Number of solution vectors
   };
 
   //! \brief Enum for element-level right-hand-side vectors.
   enum ResidualVectors
   {
-    Fsys = 0,  // Final RHS vector
+    Fsys = 0, //!< Final RHS vector
 
     // Sub-vectors, sized according to the bases in question
-    Fu = 1,    // Internal elastic forces, external traction and body forces
-    Fp = 2,    // Pressure flux and body forces
+    Fu   = 1, //!< Internal elastic forces, external traction and body forces
+    Fp   = 2, //!< Pressure flux and body forces
 
-    NVEC = 3
+    NVEC = 3  //!< Total number of right-hand-side vectors
   };
 
   //! \brief Enum for element-level left-hand-side matrices.
   enum TangentMatrices
   {
-    Nsys = 0,  // Final Newton matrix
+    Nsys = 0, //!< Final Newton matrix
 
     // Sub-matrices, sized according to the bases in question
-    uu_K = 1,  // Stiffness matrix
-    pp_S = 2,  // Compressibility matrix
-    up_Q = 3,  // Coupling matrix
-    pu_Q = 4,  // Coupling matrix
-    uu_M = 5,  // Mass matrix
-    up_D = 6,  // Dynamic coupling matrix
-    pp_P = 7,  // Permeability matrix
+    uu_K = 1, //!< Stiffness matrix
+    pp_S = 2, //!< Compressibility matrix
+    up_Q = 3, //!< Coupling matrix
+    pu_Q = 4, //!< Coupling matrix
+    uu_M = 5, //!< Mass matrix
+    up_D = 6, //!< Dynamic coupling matrix
+    pp_P = 7, //!< Permeability matrix
 
-    NMAT = 8
+    NMAT = 8  //!< Total number of matrices
   };
 
 protected:
@@ -113,7 +111,7 @@ protected:
     void setStepSize(double dt) { h = dt; }
 
     //! \brief Enables nondimensionalization.
-    void nondimensionalize(Characteristics cars) { this->cars = cars; }
+    void nondimensionalize(Characteristics c) { cars = c; }
 
     //! \brief Updates the perpendicular crack stretch.
     void setCrackStretch(double cs) { lambda = cs; }
@@ -124,10 +122,9 @@ protected:
     virtual const Vector& getRHSVector() const;
 
   protected:
-    //! \brief Apply nondimensional scaling to all matrices.
+    //! \brief Applies nondimensional scaling to all matrices.
     virtual void scaleMatrices();
-
-    //! \brief Apply nondimensional scaling to all right-hand-side vectors.
+    //! \brief Applies nondimensional scaling to all right-hand-side vectors.
     virtual void scaleVectors();
 
     double h;      //!< Current time step size
@@ -135,7 +132,7 @@ protected:
     char dynamic;  //!< Current dynamic mode (see constructor)
     bool residual; //!< Whether to calculate residuals on RHS
 
-    Characteristics cars;       //!< Characteristic sizes for nondimensionalization
+    Characteristics cars; //!< Characteristic sizes for nondimensionalization
   };
 
 private:
@@ -144,7 +141,8 @@ private:
   {
   public:
     //! \brief The constructor forwards to the parent class constructor.
-    MixedElmMats(size_t ndof_d, size_t ndof_p, bool neumann, char dyn, bool residual, int nsd)
+    MixedElmMats(size_t ndof_d, size_t ndof_p, bool neumann,
+                 char dyn, bool residual, int nsd)
       : Mats(ndof_d, ndof_p, neumann, dyn, residual, 2, nsd) {}
     //! \brief Empty destructor.
     virtual ~MixedElmMats() {}
@@ -155,7 +153,8 @@ private:
   {
   public:
     //! \brief The constructor forwards to the parent class constructor.
-    StdElmMats(size_t ndof_d, size_t ndof_p, bool neumann, char dyn, bool residual, int nsd)
+    StdElmMats(size_t ndof_d, size_t ndof_p, bool neumann,
+               char dyn, bool residual, int nsd)
       : Mats(ndof_d, ndof_p, neumann, dyn, residual, 1, nsd) {}
     //! \brief Empty destructor.
     virtual ~StdElmMats() {}
@@ -167,14 +166,13 @@ private:
   public:
     //! \brief The constructor initializes the time integration parameters.
     NewmarkMats(size_t ndof_d, size_t ndof_p, bool neumann,
-                double b, double c, double m, double s,
-                bool useDynCpl, int nsd)
+                double b, double c, double m, double s, bool useDynCpl, int nsd)
       : P(ndof_d, ndof_p, neumann, useDynCpl ? 3 : 2, false, nsd),
         beta(fabs(b)), gamma(c), m_damp(m), s_damp(s), slvDisp(b < 0.0) {}
     //! \brief Empty destructor.
     virtual ~NewmarkMats() {}
 
-    //! \brief Apply nondimensional scaling to all matrices.
+    //! \brief Applies nondimensional scaling to all matrices.
     virtual void scaleMatrices()
     {
       this->P::scaleMatrices();
@@ -206,7 +204,7 @@ private:
       A[uu_K].add(A[uu_M], 1.0 + gammah * m_damp);
       A[up_Q] *= -betah2;
       if (!A[up_D].empty())
-	A[pu_Q].addBlock(A[up_D], -1.0, 1, 1, true);
+        A[pu_Q].addBlock(A[up_D], -1.0, 1, 1, true);
       A[pp_S] *= gammah;
       A[pp_S].add(A[pp_P],betah2);
       this->BlockElmMats::getNewtonMatrix();
@@ -276,7 +274,7 @@ public:
   //! \param[in] mix If \e true, a mixed formulation is used
   //! \param[in] staticFlow If \e false, switches to a half-static formulation
   //!            (no effect in dynamic mode)
-  PoroElasticity(unsigned short int n, bool mix, bool staticFlow);
+  PoroElasticity(unsigned short int n, bool mix, bool staticFlow = true);
 
   //! \brief The destructor deletes the volume flux function, if any.
   virtual ~PoroElasticity();
@@ -412,7 +410,7 @@ public:
 
   //! \brief Returns the number of primary/secondary solution field components
   //! \param[in] fld Which field set to consider (1=primary,2=secondary)
-  virtual size_t getNoFields(int fld = 1) const;
+  virtual size_t getNoFields(int fld) const;
 
   //! \brief Returns the name of a primary solution field component
   //! \param[in] i Field component index
@@ -509,7 +507,7 @@ public:
   //! \brief Returns the number of norm groups or the size of a specified group.
   //! \param[in] group The norm group to return the size of
   //! (if zero, return the number of groups)
-  virtual size_t getNoFields(int group = 0) const;
+  virtual size_t getNoFields(int group) const;
 
   //! \brief Returns the name of a norm quantity.
   //! \param[in] i The norm group (one-based index)
