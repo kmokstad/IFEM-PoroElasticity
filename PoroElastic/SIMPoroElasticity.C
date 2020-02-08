@@ -16,20 +16,15 @@
 #include "PoroMaterial.h"
 
 
-template<> bool SIMPoroEl2D::parseDimSpecific (const TiXmlElement* child)
+template<> bool SIMPoroEl2D::parseDimSpecific (const TiXmlElement* elem)
 {
-  if (strcasecmp(child->Value(),"anasol"))
-    return false;
-  else if (SIM2D::mySol)
-    return true;
-
   std::string type;
-  utl::getAttribute(child,"type",type,true);
+  utl::getAttribute(elem,"type",type,true);
   if (type == "terzhagi")
   {
     double height = 1.0, load = 1.0;
-    utl::getAttribute(child,"height",height);
-    utl::getAttribute(child,"load",load);
+    utl::getAttribute(elem,"height",height);
+    utl::getAttribute(elem,"load",load);
     IFEM::cout <<"\tAnalytical solution: Terzhagi, height = "<< height
                <<" load = "<< load << std::endl;
     Elasticity* elp = this->getIntegrand();
@@ -40,7 +35,7 @@ template<> bool SIMPoroEl2D::parseDimSpecific (const TiXmlElement* child)
   else if (type == "terzhagi-stationary")
   {
     double load = 1.0;
-    utl::getAttribute(child,"load",load);
+    utl::getAttribute(elem,"load",load);
     IFEM::cout <<"\tAnalytical solution: Terzhagi (stationary),"
                <<" load = "<< load << std::endl;
     Elasticity* elp = this->getIntegrand();
@@ -49,24 +44,7 @@ template<> bool SIMPoroEl2D::parseDimSpecific (const TiXmlElement* child)
                               new StationaryTerzhagiDisplacement(pmat,load));
   }
   else
-  {
-    IFEM::cout <<"\tAnalytical solution: Expression"<< std::endl;
-    SIM2D::mySol = new AnaSol(child);
-  }
-
-  return true;
-}
-
-
-template<> bool SIMPoroEl3D::parseDimSpecific (const TiXmlElement* child)
-{
-  if (strcasecmp(child->Value(),"anasol"))
     return false;
-  else if (SIM3D::mySol)
-    return true;
-
-  IFEM::cout <<"\tAnalytical solution: Expression"<< std::endl;
-  SIM3D::mySol = new AnaSol(child);
 
   return true;
 }

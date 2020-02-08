@@ -16,7 +16,6 @@
 
 #include "SIMElasticityWrap.h"
 #include "SIM2D.h"
-#include "SIM3D.h"
 #include "SAM.h"
 #include "PoroElasticity.h"
 #include "ASMmxBase.h"
@@ -191,9 +190,20 @@ protected:
     return this->SIMElasticityWrap<Dim>::parse(elem);
   }
 
-  using SIMElasticityWrap<Dim>::parseDimSpecific;
-  //! \brief Parses a dimension-specific data section from an XML element.
-  virtual bool parseDimSpecific(const TiXmlElement* elem);
+  using SIMElasticityWrap<Dim>::parseAnaSol;
+  //! \brief Parses the analytical solution from an XML element.
+  virtual bool parseAnaSol(const TiXmlElement* elem)
+  {
+    if (Dim::mySol || this->parseDimSpecific(elem))
+      return true;
+
+    IFEM::cout <<"\tAnalytical solution: Expression"<< std::endl;
+    Dim::mySol = new AnaSol(elem);
+    return true;
+  }
+
+  //! \brief Parses dimension-specific analytical solution from an XML element.
+  bool parseDimSpecific(const TiXmlElement*) { return false; }
 
 private:
   double scaleD; //!< Displacement DOF scaling in convergence checks
@@ -202,11 +212,8 @@ private:
 
 
 typedef SIMPoroElasticity<SIM2D> SIMPoroEl2D; //!< 2D specific driver
-typedef SIMPoroElasticity<SIM3D> SIMPoroEl3D; //!< 3D specific driver
 
 //! \brief Template specialization - 2D specific input parsing.
 template<> bool SIMPoroEl2D::parseDimSpecific(const TiXmlElement* elem);
-//! \brief Template specialization - 3D specific input parsing.
-template<> bool SIMPoroEl3D::parseDimSpecific(const TiXmlElement* elem);
 
 #endif
