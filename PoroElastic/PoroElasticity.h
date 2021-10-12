@@ -301,7 +301,7 @@ public:
   virtual bool init(const TimeDomain& time);
 
   //! \brief Sets the boundary flux field.
-  void setBoundaryFlux(RealFunc* f) { fluxFld = f; }
+  void setBoundaryFlux(RealFunc* f) { pfluxFld = f; }
 
   //! \brief Returns a local integral contribution object for the given element.
   //! \param[in] nen Number of nodes on element for each basis
@@ -482,7 +482,7 @@ private:
   bool staticFlow;      //!< If \e true, use a fully static formulation
 
   RealFunc* volumeFlux; //!< Applied volumetric flux
-  RealFunc* fluxFld;    //!< Boundary flux field
+  RealFunc* pfluxFld;    //!< Pressure boundary flux field
 
   friend class PoroNorm;
 };

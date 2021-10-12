@@ -33,7 +33,7 @@ PoroElasticity::PoroElasticity (unsigned short int n, bool mix, bool staticFlow)
 
   nondim = calculateEnergy = useDynCoupling = residual = false;
 
-  volumeFlux = fluxFld = nullptr;
+  volumeFlux = pfluxFld = nullptr;
 }
 
 
@@ -420,9 +420,9 @@ bool PoroElasticity::evalBou (LocalIntegral& elmInt,
                               const TimeDomain&, const Vec3& X,
                               const Vec3& normal) const
 {
-  if (fluxFld)
+  if (pfluxFld)
   {
-    double hbar = -(*fluxFld)(X);
+    double hbar = -(*pfluxFld)(X);
     static_cast<ElmMats&>(elmInt).b[Fp].add(fe.basis(2),hbar*fe.detJxW);
     return true;
   }
