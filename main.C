@@ -48,6 +48,9 @@ public:
 };
 
 
+static int msgLevel = 1; //!< Console output amount during equation solving
+
+
 /*!
   \brief Creates the poroelastic simulator and launches the simulation.
   \param[in] infile The input file to parse
@@ -76,6 +79,7 @@ template<class Dim, class Sim> int runSimulator (char* infile, double stopTime)
 
   if (stopTime >= 0.0)
     solver.setStopTime(stopTime);
+  SIMadmin::msgLevel = msgLevel;
 
   IFEM::cout <<"\n\n10. Preprocessing the finite element model:"
              <<"\n==========================================="<< std::endl;
@@ -159,6 +163,8 @@ int main (int argc, char** argv)
       integrator = FULL_STATIC;
     else if (!strncmp(argv[i],"-stopT",6) && i < argc-1)
       stopTime = atof(argv[++i]);
+    else if (!strncmp(argv[i],"-msg",4) && i < argc-1)
+      msgLevel = atoi(argv[++i]);
     else if (!infile)
       infile = argv[i];
     else
@@ -171,7 +177,7 @@ int main (int argc, char** argv)
               <<"       [-lag|-spec|-LR] [-2D] [-nGauss <n>] [-mixed]\n"
               <<"       [-dyn[1|2]|-halfstatic|-fullstatic]\n"
               <<"       [-vtf <format> [-nviz <nviz>] [-nu <nu> [-nv <nv>]\n"
-              <<"       [-nw <nw>]] [-hdf5] [-stopTime <t>]\n";
+              <<"       [-nw <nw>]] [-hdf5] [-stopTime <t>] [-msgLev [n]]\n";
     return 0;
   }
 

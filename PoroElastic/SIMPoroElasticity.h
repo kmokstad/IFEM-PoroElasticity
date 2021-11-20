@@ -59,8 +59,9 @@ public:
     if (!this->solveSystem(SIMsolution::solution.front(),Dim::msgLevel-1))
       return false;
 
+#ifndef SP_DEBUG
     this->printSolutionSummary(SIMsolution::solution.front());
-
+#endif
     return this->postSolve(tp);
   }
 
@@ -100,10 +101,22 @@ public:
   }
 
   //! \brief Prints a summary of the calculated solution to std::cout.
-  virtual void printSolutionSummary(const Vector& solution, int = 0,
+  virtual void printSolutionSummary(const Vector& solution, int printSol = 0,
                                     const char* = nullptr, std::streamsize = 0)
   {
     const size_t nsd = this->getNoSpaceDim();
+    if (printSol >= (int)solution.size())
+    {
+      int inod = 0, idof = 0;
+      IFEM::cout <<"\nSolution vector:";
+      for (double v : solution)
+        if ((++idof)%(nsd+1) == 1)
+          IFEM::cout <<"\nNode "<< ++inod <<": "<< utl::trunc(v);
+        else
+          IFEM::cout <<" "<< utl::trunc(v);
+      IFEM::cout << std::endl;
+    }
+
     size_t iMax[nsd+1];
     double dMax[nsd+1];
     double dNorm = this->solutionNorms(solution,dMax,iMax,nsd);
