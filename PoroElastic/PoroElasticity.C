@@ -504,16 +504,16 @@ std::string PoroElasticity::getField1Name (size_t i, const char* prefix) const
 std::string PoroElasticity::getField2Name (size_t i, const char* prefix) const
 {
   size_t ncmp = nsd * (nsd + 1) / 2;
-  std::string name;
+  std::string name("FluidContent");
   if (i < 2 * ncmp) {
     static const char* s[][6] = {{"x", "y", "xy", "", "", ""},
                                  {"x", "y", "z", "yz", "xz", "xy"}};
     name = std::string(i < ncmp ? "eps_" : "sig_") + s[nsd-2][i%ncmp];
-  } else
-    name = "FluidContent";
+  }
 
   if (!prefix)
     return name;
+
   return prefix + std::string(" ") + name;
 }
 
@@ -523,7 +523,8 @@ bool PoroElasticity::evalSol (Vector& s, const MxFiniteElement& fe,
                               const std::vector<size_t>& elem_sizes,
                               const std::vector<size_t>&) const
 {
-  auto split = MNPC.begin() + elem_sizes.front();
+  std::vector<int>::const_iterator split = MNPC.begin() + elem_sizes.front();
+
   std::vector<int> MNPC1(MNPC.begin(), split);
   std::vector<int> MNPC2(split, split + elem_sizes[1]);
 
@@ -576,7 +577,7 @@ bool PoroElasticity::evalSol (Vector& s, const FiniteElement& fe,
 
   s = eps;
   const RealArray& sig = sigma;
-  s.insert(s.end(),sig.begin(),sig.end());
+  s.push_back(sig.begin(),sig.end());
 
   const PoroMaterial* pmat = dynamic_cast<const PoroMaterial*>(material);
   if (!pmat) {
@@ -589,8 +590,7 @@ bool PoroElasticity::evalSol (Vector& s, const FiniteElement& fe,
   double Minv = pmat->getBiotModulus(X, alpha, porosity);
 
   // Fluid content is given implicitly, see (10) in Bekele2017omi
-  double fluidContent = eps.trace() * pmat->getBiotCoeff(X) + pressure * Minv;
-  s.insert(s.end(), fluidContent);
+  s.push_back(eps.trace() * pmat->getBiotCoeff(X) + pressure * Minv);
 
   return true;
 }
