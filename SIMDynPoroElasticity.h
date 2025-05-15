@@ -36,14 +36,16 @@ public:
   virtual ~SIMDynPoroElasticity() {}
 
   //! \brief Prints out problem-specific data to the log stream.
-  virtual void printProblem() const
+  virtual bool printProblem() const
   {
+    bool prn = true;
     static short int ncall = 0;
     if (++ncall == 1) // Avoiding infinite recursive calls
       dSim.printProblem();
     else
-      this->SIMPoroElasticity<Dim>::printProblem();
+      prn = this->SIMPoroElasticity<Dim>::printProblem();
     --ncall;
+    return prn;
   }
 
   //! \brief Initializes the problem.
