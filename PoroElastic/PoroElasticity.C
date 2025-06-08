@@ -79,7 +79,7 @@ bool PoroElasticity::parse (const tinyxml2::XMLElement* elem)
 }
 
 
-Material* PoroElasticity::parseMatProp (const tinyxml2::XMLElement* elem, bool)
+Material* PoroElasticity::parseMatProp (const tinyxml2::XMLElement* elem)
 {
   IFEM::cout <<" Poroelastic material, see \"Problem definition:\" below."
              << std::endl;
